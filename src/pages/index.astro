@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CatalogHeader from '../components/CatalogHeader.astro';
+---
+
+<Layout>
+  <main class="page__inner">
+    <CatalogHeader />
+    <div id="catalog" class="catalog" aria-live="polite">
+      <p class="catalog-message catalog-message--loading">Chargement du catalogue…</p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { fetchCatalog } from '../lib/sheets';
+  import { formatTotalReferences } from '../lib/format';
+  import { renderCatalog, renderError } from '../lib/render';
+
+  const sheetId = import.meta.env.PUBLIC_GOOGLE_SHEET_ID;
+  const catalogEl = document.getElementById('catalog');
+  const countEl = document.getElementById('reference-count');
+
+  async function loadCatalog() {
+    if (!catalogEl) return;
+
+    try {
+      const data = await fetchCatalog(sheetId);
+      catalogEl.innerHTML = renderCatalog(data.regions);
+
+      if (countEl) {
+        countEl.textContent = formatTotalReferences(data.totalCount);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement.';
+      catalogEl.innerHTML = renderError(message);
+    }
+  }
+
+  loadCatalog();
+</script>
