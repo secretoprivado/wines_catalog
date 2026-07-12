@@ -46,9 +46,25 @@ export function formatVintage(vintage: string | null): string | null {
 export function formatAging(aging: string): string | null {
   const value = aging.trim();
   if (!value) return null;
-  return value.endsWith('an') || value.endsWith('ans') || value.includes('+') || value.includes('-')
-    ? value
-    : `${value} an`;
+
+  if (value.includes('+') || value.includes('-')) {
+    return value;
+  }
+
+  if (/\d\s*ans$/i.test(value)) {
+    return value;
+  }
+
+  if (/\d\s*an$/i.test(value)) {
+    return value.replace(/\s*an$/i, ' ans');
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isNaN(parsed)) {
+    return parsed <= 1 ? `${parsed} an` : `${parsed} ans`;
+  }
+
+  return `${value} ans`;
 }
 
 export function formatAppellation(appellation: string): string {
