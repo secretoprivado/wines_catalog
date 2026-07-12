@@ -48,18 +48,34 @@ pnpm preview
 ### One-time setup
 
 1. Go to **Settings → Pages → Build and deployment → Source** and select **GitHub Actions**
-2. Go to **Settings → Secrets and variables → Actions → Variables** and add:
-   - `PUBLIC_GOOGLE_SHEET_ID` — your Google Sheet ID
+2. Add `PUBLIC_GOOGLE_SHEET_ID` in **one** of these places (Settings → Secrets and variables → Actions):
+   - **Secrets** (recommended if you already created it there)
+
+   Value: your Google Sheet ID
 
 ### Deploy
 
 Push to `main`. The workflow in `.github/workflows/deploy.yml` builds and deploys automatically.
 
+### Troubleshooting: Jekyll / YAML front matter error
+
+If the build log mentions `jekyll`, `Invalid YAML front matter`, or paths like `src/pages/index.astro`, GitHub Pages is trying to build the repository with **Jekyll** instead of the Astro workflow.
+
+Fix:
+
+1. Open **Settings → Pages → Build and deployment**
+2. Set **Source** to **GitHub Actions** (not "Deploy from a branch")
+3. Re-run the **Deploy to GitHub Pages** workflow from the Actions tab
+
+This project is an Astro static site. The published output is the `dist/` folder produced by `pnpm build`, not the raw source files in `src/`.
+
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `PUBLIC_GOOGLE_SHEET_ID` | Google Sheet ID (embedded at build time for client-side fetch) |
+| `PUBLIC_GOOGLE_SHEET_ID` | Google Sheet ID (injected at build time into the client bundle) |
+
+> **Note:** This value is baked into the site during `pnpm build`. After adding or changing it on GitHub, re-run the **Deploy to GitHub Pages** workflow (or push a commit) so the build picks it up.
 
 ## License
 
