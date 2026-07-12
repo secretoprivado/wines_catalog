@@ -158,20 +158,44 @@ function parseRows(
     const domainValue = getRowValue(row, columnMap.domain);
     const cuveeValue = getRowValue(row, columnMap.cuvee);
 
-    if (countryValue !== null && String(countryValue).trim()) {
-      currentCountry = String(countryValue).trim();
+    const hasCountryOnRow = countryValue !== null && String(countryValue).trim() !== '';
+    const hasRegionOnRow = regionValue !== null && String(regionValue).trim() !== '';
+    const hasDomainOnRow = domainValue !== null && String(domainValue).trim() !== '';
+    const hasCuveeOnRow = cuveeValue !== null && String(cuveeValue).trim() !== '';
+
+    if (hasCountryOnRow) {
+      const newCountry = String(countryValue).trim();
+      if (newCountry !== currentCountry) {
+        currentCountry = newCountry;
+        currentRegion = '';
+        currentDomain = '';
+        currentCuvee = '';
+      }
     }
-    if (regionValue !== null && String(regionValue).trim()) {
-      currentRegion = String(regionValue).trim();
+
+    if (hasRegionOnRow) {
+      const newRegion = String(regionValue).trim();
+      if (newRegion !== currentRegion) {
+        currentRegion = newRegion;
+        currentDomain = '';
+        currentCuvee = '';
+      }
     }
-    if (domainValue !== null && String(domainValue).trim()) {
-      currentDomain = String(domainValue).trim();
+
+    if (hasDomainOnRow) {
+      const newDomain = String(domainValue).trim();
+      if (newDomain !== currentDomain) {
+        currentDomain = newDomain;
+        currentCuvee = '';
+      }
     }
-    if (cuveeValue !== null && String(cuveeValue).trim()) {
+
+    if (hasCuveeOnRow) {
       currentCuvee = String(cuveeValue).trim();
     }
 
     if (!currentRegion || !currentDomain || !currentCuvee) continue;
+    if (!hasDomainOnRow && !hasCuveeOnRow) continue;
 
     wines.push({
       country: currentCountry,
