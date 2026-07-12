@@ -194,15 +194,19 @@ function parseRows(
       currentCuvee = String(cuveeValue).trim();
     }
 
-    if (!currentRegion || !currentDomain || !currentCuvee) continue;
-    if (!hasDomainOnRow && !hasCuveeOnRow) continue;
+    const vintageOnRow = parseVintage(getRowValue(row, columnMap.vintage));
+    const hasVintageOnRow = vintageOnRow !== null;
+
+    if (!currentRegion || !currentDomain) continue;
+    if (!currentCuvee && !hasVintageOnRow) continue;
+    if (!hasDomainOnRow && !hasCuveeOnRow && !hasVintageOnRow) continue;
 
     wines.push({
       country: currentCountry,
       region: currentRegion,
       domain: currentDomain,
       cuvee: currentCuvee,
-      vintage: parseVintage(getRowValue(row, columnMap.vintage)),
+      vintage: vintageOnRow,
       type: parseText(getRowValue(row, columnMap.type)),
       appellation: parseText(getRowValue(row, columnMap.appellation)),
       grape: parseText(getRowValue(row, columnMap.grape)),

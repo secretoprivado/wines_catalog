@@ -92,6 +92,10 @@ function renderWineRow(wine: Wine): string {
     ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
     : '';
 
+  const cuveeHtml = wine.cuvee
+    ? `<em class="wine-row__cuvee">${escapeHtml(wine.cuvee)}</em>`
+    : '';
+
   const stockHtml = stock
     ? `<span class="wine-row__stock">${escapeHtml(stock)}</span>`
     : '';
@@ -108,7 +112,7 @@ function renderWineRow(wine: Wine): string {
           <h3 class="wine-row__domain-name">${escapeHtml(wine.domain)}</h3>
         </div>
         <div class="wine-row__title">
-          <em class="wine-row__cuvee">${escapeHtml(wine.cuvee)}</em>
+          ${cuveeHtml}
           ${vintageHtml}
         </div>
         <div class="wine-row__commerce">
