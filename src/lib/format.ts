@@ -21,7 +21,8 @@ export function getTypeDotColor(type: string): string {
   return 'oklch(0.68 0.13 65)';
 }
 
-export function formatStock(stock: number): string {
+export function formatStock(stock: number | null): string | null {
+  if (stock === null) return null;
   return `${stock} BTL.`;
 }
 
@@ -37,12 +38,29 @@ export function formatScore(score: number | null): string | null {
   return `${rounded} / 100`;
 }
 
+export function formatVintage(vintage: string | null): string | null {
+  if (!vintage) return null;
+  return vintage;
+}
+
+export function formatAging(aging: string): string | null {
+  const value = aging.trim();
+  if (!value) return null;
+  return value.endsWith('an') || value.endsWith('ans') || value.includes('+') || value.includes('-')
+    ? value
+    : `${value} an`;
+}
+
 export function formatAppellation(appellation: string): string {
   return appellation.trim().toUpperCase();
 }
 
 export function formatGrape(grape: string): string {
-  return grape.trim().toUpperCase();
+  return grape.trim();
+}
+
+export function formatFoodPairing(foodPairing: string): string {
+  return foodPairing.trim();
 }
 
 export function formatRegionCount(count: number): string {

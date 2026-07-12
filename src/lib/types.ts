@@ -2,11 +2,15 @@ export interface Wine {
   region: string;
   domain: string;
   cuvee: string;
-  type: string;
+  vintage: string | null;
   appellation: string;
   grape: string;
-  score: number | null;
-  stock: number;
+  type: string;
+  aging: string;
+  scoreParker: number | null;
+  scoreRvf: number | null;
+  stock: number | null;
+  foodPairing: string;
   price: number | null;
 }
 

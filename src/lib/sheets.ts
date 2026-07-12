@@ -26,24 +26,28 @@ interface ColumnAliases {
   type: string[];
   appellation: string[];
   grape: string[];
-  score: string[];
-  scoreAlt: string[];
+  aging: string[];
+  scoreParker: string[];
+  scoreRvf: string[];
   stock: string[];
+  foodPairing: string[];
   price: string[];
 }
 
 const COLUMN_ALIASES: ColumnAliases = {
-  region: ['region', 'région', 'règion'],
+  region: ['région', 'region', 'règion'],
   domain: ['domaine', 'producteur', 'domain', 'producer'],
   cuvee: ['cuvée', 'cuvee', 'wine', 'nom'],
   vintage: ['millésime', 'millesime', 'vintage', 'année', 'annee'],
   type: ['type', 'couleur', 'color'],
   appellation: ['appellation', 'aoc', 'aop'],
-  grape: ['cépage', 'cepage', 'grape', 'variety', 'variété', 'variete'],
-  score: ['notes critiques parker', 'parker', 'note', 'score', 'rating', 'points'],
-  scoreAlt: ['revue du vin de france', 'revue du vin', 'rvf'],
+  grape: ['cépage(s)', 'cepage(s)', 'cépage', 'cepage', 'grape', 'variety', 'variété', 'variete'],
+  aging: ['temps de garde', 'garde'],
+  scoreParker: ['notes critiques parker', 'parker'],
+  scoreRvf: ['notes critiques revue du vin de france', 'revue du vin de france', 'revue du vin', 'rvf'],
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
-  price: ['prix unitaire', 'prix', 'price', 'tarif'],
+  foodPairing: ['type de plat', 'plat', 'accord'],
+  price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
 
 function normalizeHeader(header: string): string {
@@ -60,7 +64,7 @@ function findColumnIndex(headers: string[], aliases: string[]): number {
   for (const alias of aliases) {
     const normalizedAlias = normalizeHeader(alias);
     const exactIndex = normalizedHeaders.findIndex(
-      (header, index) => header.length > 0 && header === normalizedAlias,
+      (header) => header.length > 0 && header === normalizedAlias,
     );
     if (exactIndex !== -1) return exactIndex;
   }
@@ -105,9 +109,11 @@ function parseVintage(value: string | number | null): string | null {
   return String(Math.round(parsed));
 }
 
-function buildCuveeLabel(cuvee: string, vintage: string | null): string {
-  if (!vintage) return cuvee;
-  return `${cuvee} ${vintage}`;
+function parseText(value: string | number | null): string {
+  if (value === null) return '';
+  const text = String(value).trim();
+  if (text === '/' || text === '-') return '';
+  return text;
 }
 
 function parseRows(
@@ -136,20 +142,19 @@ function parseRows(
 
     if (!currentRegion || !currentDomain || !currentCuvee) continue;
 
-    const vintage = parseVintage(getRowValue(row, columnMap.vintage));
-    const score =
-      parseNumber(getRowValue(row, columnMap.score)) ??
-      parseNumber(getRowValue(row, columnMap.scoreAlt));
-
     wines.push({
       region: currentRegion,
       domain: currentDomain,
-      cuvee: buildCuveeLabel(currentCuvee, vintage),
-      type: String(getRowValue(row, columnMap.type) ?? '').trim(),
-      appellation: String(getRowValue(row, columnMap.appellation) ?? '').trim(),
-      grape: String(getRowValue(row, columnMap.grape) ?? '').trim(),
-      score,
-      stock: parseNumber(getRowValue(row, columnMap.stock)) ?? 0,
+      cuvee: currentCuvee,
+      vintage: parseVintage(getRowValue(row, columnMap.vintage)),
+      type: parseText(getRowValue(row, columnMap.type)),
+      appellation: parseText(getRowValue(row, columnMap.appellation)),
+      grape: parseText(getRowValue(row, columnMap.grape)),
+      aging: parseText(getRowValue(row, columnMap.aging)),
+      scoreParker: parseNumber(getRowValue(row, columnMap.scoreParker)),
+      scoreRvf: parseNumber(getRowValue(row, columnMap.scoreRvf)),
+      stock: parseNumber(getRowValue(row, columnMap.stock)),
+      foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
       price: parseNumber(getRowValue(row, columnMap.price)),
     });
   }
@@ -170,7 +175,13 @@ function groupByRegion(wines: Wine[]): RegionGroup[] {
     .sort(([a], [b]) => a.localeCompare(b, 'fr'))
     .map(([region, regionWines]) => ({
       region,
-      wines: regionWines.sort((a, b) => a.domain.localeCompare(b.domain, 'fr')),
+      wines: regionWines.sort((a, b) => {
+        const domainCompare = a.domain.localeCompare(b.domain, 'fr');
+        if (domainCompare !== 0) return domainCompare;
+        const cuveeCompare = a.cuvee.localeCompare(b.cuvee, 'fr');
+        if (cuveeCompare !== 0) return cuveeCompare;
+        return (a.vintage ?? '').localeCompare(b.vintage ?? '', 'fr');
+      }),
     }));
 }
 
@@ -207,14 +218,16 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     type: findColumnIndex(headers, COLUMN_ALIASES.type),
     appellation: findColumnIndex(headers, COLUMN_ALIASES.appellation),
     grape: findColumnIndex(headers, COLUMN_ALIASES.grape),
-    score: findColumnIndex(headers, COLUMN_ALIASES.score),
-    scoreAlt: findColumnIndex(headers, COLUMN_ALIASES.scoreAlt),
+    aging: findColumnIndex(headers, COLUMN_ALIASES.aging),
+    scoreParker: findColumnIndex(headers, COLUMN_ALIASES.scoreParker),
+    scoreRvf: findColumnIndex(headers, COLUMN_ALIASES.scoreRvf),
     stock: findColumnIndex(headers, COLUMN_ALIASES.stock),
+    foodPairing: findColumnIndex(headers, COLUMN_ALIASES.foodPairing),
     price: findColumnIndex(headers, COLUMN_ALIASES.price),
   };
 
   if (columnMap.region === -1 || columnMap.domain === -1 || columnMap.cuvee === -1) {
-    throw new Error('Colonnes requises manquantes (Region, Domaine, Cuvée).');
+    throw new Error('Colonnes requises manquantes (Région, Domaine, Cuvée).');
   }
 
   const wines = parseRows(data.table.rows, columnMap);

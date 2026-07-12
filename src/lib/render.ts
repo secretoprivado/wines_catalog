@@ -1,12 +1,15 @@
 import type { RegionGroup, Wine } from './types';
 import {
+  formatAging,
   formatAppellation,
+  formatFoodPairing,
   formatGrape,
   formatPrice,
   formatRegionCount,
   formatScore,
   formatStock,
   formatType,
+  formatVintage,
   getTypeDotColor,
 } from './format';
 
@@ -18,48 +21,100 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function renderMetadata(wine: Wine): string {
-  const parts: string[] = [];
+interface DetailItem {
+  label: string;
+  value: string;
+  typeDot?: string;
+}
+
+function buildDetails(wine: Wine): DetailItem[] {
+  const details: DetailItem[] = [];
 
   if (wine.type) {
-    const dotColor = getTypeDotColor(wine.type);
-    parts.push(
-      `<span class="wine-meta__type"><span class="wine-meta__dot" style="background-color: ${dotColor}"></span>${escapeHtml(formatType(wine.type))}</span>`,
-    );
+    details.push({
+      label: 'Type',
+      value: formatType(wine.type),
+      typeDot: getTypeDotColor(wine.type),
+    });
   }
 
   if (wine.appellation) {
-    parts.push(`<span>${escapeHtml(formatAppellation(wine.appellation))}</span>`);
+    details.push({ label: 'Appellation', value: formatAppellation(wine.appellation) });
   }
 
   if (wine.grape) {
-    parts.push(`<span>${escapeHtml(formatGrape(wine.grape))}</span>`);
+    details.push({ label: 'Cépage(s)', value: formatGrape(wine.grape) });
   }
 
-  const score = formatScore(wine.score);
-  if (score) {
-    parts.push(`<span>${escapeHtml(score)}</span>`);
+  const aging = formatAging(wine.aging);
+  if (aging) {
+    details.push({ label: 'Garde', value: aging });
   }
 
-  return parts.join('<span class="wine-meta__sep">·</span>');
+  const parker = formatScore(wine.scoreParker);
+  if (parker) {
+    details.push({ label: 'Parker', value: parker });
+  }
+
+  const rvf = formatScore(wine.scoreRvf);
+  if (rvf) {
+    details.push({ label: 'RVF', value: rvf });
+  }
+
+  if (wine.foodPairing) {
+    details.push({ label: 'Accord', value: formatFoodPairing(wine.foodPairing) });
+  }
+
+  return details;
+}
+
+function renderDetail(item: DetailItem): string {
+  const dot = item.typeDot
+    ? `<span class="wine-detail__dot" style="background-color: ${item.typeDot}"></span>`
+    : '';
+
+  return `
+    <div class="wine-detail">
+      <dt class="wine-detail__label">${escapeHtml(item.label)}</dt>
+      <dd class="wine-detail__value">${dot}${escapeHtml(item.value)}</dd>
+    </div>
+  `;
 }
 
 function renderWineRow(wine: Wine): string {
-  const metadata = renderMetadata(wine);
+  const vintage = formatVintage(wine.vintage);
+  const stock = formatStock(wine.stock);
+  const details = buildDetails(wine);
+
+  const vintageHtml = vintage
+    ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
+    : '';
+
+  const stockHtml = stock
+    ? `<span class="wine-row__stock">${escapeHtml(stock)}</span>`
+    : '';
+
+  const detailsHtml =
+    details.length > 0
+      ? `<dl class="wine-row__details">${details.map(renderDetail).join('')}</dl>`
+      : '';
 
   return `
     <article class="wine-row">
-      <div class="wine-row__domain">
-        <h3 class="wine-row__domain-name">${escapeHtml(wine.domain)}</h3>
-        ${metadata ? `<div class="wine-meta">${metadata}</div>` : ''}
+      <div class="wine-row__header">
+        <div class="wine-row__domain">
+          <h3 class="wine-row__domain-name">${escapeHtml(wine.domain)}</h3>
+        </div>
+        <div class="wine-row__title">
+          <em class="wine-row__cuvee">${escapeHtml(wine.cuvee)}</em>
+          ${vintageHtml}
+        </div>
+        <div class="wine-row__commerce">
+          ${stockHtml}
+          <span class="wine-row__price">${escapeHtml(formatPrice(wine.price))}</span>
+        </div>
       </div>
-      <div class="wine-row__cuvee">
-        <em>${escapeHtml(wine.cuvee)}</em>
-      </div>
-      <div class="wine-row__commerce">
-        <span class="wine-row__stock">${escapeHtml(formatStock(wine.stock))}</span>
-        <span class="wine-row__price">${escapeHtml(formatPrice(wine.price))}</span>
-      </div>
+      ${detailsHtml}
     </article>
   `;
 }
