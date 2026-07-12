@@ -1,4 +1,5 @@
-import type { CatalogData, RegionGroup, Wine } from './types';
+import type { CatalogData, CountryGroup, RegionGroup, Wine } from './types';
+import { formatCountryName } from './format';
 
 interface GvizCell {
   v: string | number | null;
@@ -19,6 +20,7 @@ interface GvizResponse {
 }
 
 interface ColumnAliases {
+  country: string[];
   region: string[];
   domain: string[];
   cuvee: string[];
@@ -35,7 +37,8 @@ interface ColumnAliases {
 }
 
 const COLUMN_ALIASES: ColumnAliases = {
-  region: ['région', 'region', 'règion'],
+  country: ['pays', 'country', 'nation'],
+  region: ['région', 'region', 'règion', 'cave secreto privado'],
   domain: ['domaine', 'producteur', 'domain', 'producer'],
   cuvee: ['cuvée', 'cuvee', 'wine', 'nom'],
   vintage: ['millésime', 'millesime', 'vintage', 'année', 'annee'],
@@ -116,20 +119,48 @@ function parseText(value: string | number | null): string {
   return text;
 }
 
+function isFrance(country: string): boolean {
+  const key = country.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+  return key === 'france';
+}
+
+function compareCountries(a: string, b: string): number {
+  const aIsFrance = isFrance(a);
+  const bIsFrance = isFrance(b);
+  if (aIsFrance && !bIsFrance) return -1;
+  if (!aIsFrance && bIsFrance) return 1;
+  return formatCountryName(a).localeCompare(formatCountryName(b), 'fr');
+}
+
+function sortWines(wines: Wine[]): Wine[] {
+  return wines.sort((a, b) => {
+    const domainCompare = a.domain.localeCompare(b.domain, 'fr');
+    if (domainCompare !== 0) return domainCompare;
+    const cuveeCompare = a.cuvee.localeCompare(b.cuvee, 'fr');
+    if (cuveeCompare !== 0) return cuveeCompare;
+    return (a.vintage ?? '').localeCompare(b.vintage ?? '', 'fr');
+  });
+}
+
 function parseRows(
   rows: GvizRow[],
   columnMap: Record<keyof ColumnAliases, number>,
 ): Wine[] {
+  let currentCountry = '';
   let currentRegion = '';
   let currentDomain = '';
   let currentCuvee = '';
   const wines: Wine[] = [];
 
   for (const row of rows) {
+    const countryValue = getRowValue(row, columnMap.country);
     const regionValue = getRowValue(row, columnMap.region);
     const domainValue = getRowValue(row, columnMap.domain);
     const cuveeValue = getRowValue(row, columnMap.cuvee);
 
+    if (countryValue !== null && String(countryValue).trim()) {
+      currentCountry = String(countryValue).trim();
+    }
     if (regionValue !== null && String(regionValue).trim()) {
       currentRegion = String(regionValue).trim();
     }
@@ -143,6 +174,7 @@ function parseRows(
     if (!currentRegion || !currentDomain || !currentCuvee) continue;
 
     wines.push({
+      country: currentCountry,
       region: currentRegion,
       domain: currentDomain,
       cuvee: currentCuvee,
@@ -162,26 +194,31 @@ function parseRows(
   return wines;
 }
 
-function groupByRegion(wines: Wine[]): RegionGroup[] {
-  const regionMap = new Map<string, Wine[]>();
+function groupByCountryAndRegion(wines: Wine[]): CountryGroup[] {
+  const countryMap = new Map<string, Map<string, Wine[]>>();
 
   for (const wine of wines) {
+    const countryKey = wine.country || 'Non renseigné';
+    if (!countryMap.has(countryKey)) {
+      countryMap.set(countryKey, new Map());
+    }
+
+    const regionMap = countryMap.get(countryKey)!;
     const existing = regionMap.get(wine.region) ?? [];
     existing.push(wine);
     regionMap.set(wine.region, existing);
   }
 
-  return Array.from(regionMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
-    .map(([region, regionWines]) => ({
-      region,
-      wines: regionWines.sort((a, b) => {
-        const domainCompare = a.domain.localeCompare(b.domain, 'fr');
-        if (domainCompare !== 0) return domainCompare;
-        const cuveeCompare = a.cuvee.localeCompare(b.cuvee, 'fr');
-        if (cuveeCompare !== 0) return cuveeCompare;
-        return (a.vintage ?? '').localeCompare(b.vintage ?? '', 'fr');
-      }),
+  return Array.from(countryMap.entries())
+    .sort(([a], [b]) => compareCountries(a, b))
+    .map(([country, regionMap]) => ({
+      country,
+      regions: Array.from(regionMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+        .map(([region, regionWines]) => ({
+          region,
+          wines: sortWines(regionWines),
+        })),
     }));
 }
 
@@ -211,6 +248,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
   const headers = data.table.cols.map((col) => col.label);
 
   const columnMap = {
+    country: findColumnIndex(headers, COLUMN_ALIASES.country),
     region: findColumnIndex(headers, COLUMN_ALIASES.region),
     domain: findColumnIndex(headers, COLUMN_ALIASES.domain),
     cuvee: findColumnIndex(headers, COLUMN_ALIASES.cuvee),
@@ -231,11 +269,11 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
   }
 
   const wines = parseRows(data.table.rows, columnMap);
-  const regions = groupByRegion(wines);
+  const countries = groupByCountryAndRegion(wines);
 
   return {
     wines,
-    regions,
+    countries,
     totalCount: wines.length,
   };
 }

@@ -1,7 +1,9 @@
-import type { RegionGroup, Wine } from './types';
+import type { CountryGroup, RegionGroup, Wine } from './types';
 import {
   formatAging,
   formatAppellation,
+  formatCountryCount,
+  formatCountryName,
   formatFoodPairing,
   formatGrape,
   formatPrice,
@@ -125,7 +127,7 @@ function renderRegionSection(group: RegionGroup): string {
   return `
     <section class="region-section">
       <header class="region-section__header">
-        <h2 class="region-section__title">${escapeHtml(group.region)}</h2>
+        <h3 class="region-section__title">${escapeHtml(group.region)}</h3>
         <span class="region-section__count">${escapeHtml(formatRegionCount(group.wines.length))}</span>
       </header>
       <div class="region-section__wines">
@@ -135,12 +137,28 @@ function renderRegionSection(group: RegionGroup): string {
   `;
 }
 
-export function renderCatalog(regions: RegionGroup[]): string {
-  if (regions.length === 0) {
+function renderCountrySection(group: CountryGroup): string {
+  const regions = group.regions.map(renderRegionSection).join('');
+
+  return `
+    <section class="country-section">
+      <header class="country-section__header">
+        <h2 class="country-section__title">${escapeHtml(formatCountryName(group.country))}</h2>
+        <span class="country-section__count">${escapeHtml(formatCountryCount(group.regions.length))}</span>
+      </header>
+      <div class="country-section__regions">
+        ${regions}
+      </div>
+    </section>
+  `;
+}
+
+export function renderCatalog(countries: CountryGroup[]): string {
+  if (countries.length === 0) {
     return '<p class="catalog-message">Aucune référence disponible pour le moment.</p>';
   }
 
-  return regions.map(renderRegionSection).join('');
+  return countries.map(renderCountrySection).join('');
 }
 
 export function renderLoading(): string {

@@ -1,4 +1,5 @@
 export interface Wine {
+  country: string;
   region: string;
   domain: string;
   cuvee: string;
@@ -19,8 +20,13 @@ export interface RegionGroup {
   wines: Wine[];
 }
 
+export interface CountryGroup {
+  country: string;
+  regions: RegionGroup[];
+}
+
 export interface CatalogData {
   wines: Wine[];
-  regions: RegionGroup[];
+  countries: CountryGroup[];
   totalCount: number;
 }

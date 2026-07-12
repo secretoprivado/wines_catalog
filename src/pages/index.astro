@@ -26,7 +26,7 @@ import CatalogHeader from '../components/CatalogHeader.astro';
 
     try {
       const data = await fetchCatalog(sheetId);
-      catalogEl.innerHTML = renderCatalog(data.regions);
+      catalogEl.innerHTML = renderCatalog(data.countries);
 
       if (countEl) {
         countEl.textContent = formatTotalReferences(data.totalCount);
