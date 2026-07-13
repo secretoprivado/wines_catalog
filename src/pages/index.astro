@@ -1,11 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CatalogHeader from '../components/CatalogHeader.astro';
+import CatalogFilters from '../components/CatalogFilters.astro';
 ---
 
 <Layout>
   <main class="page__inner">
     <CatalogHeader />
+    <CatalogFilters />
     <div id="catalog" class="catalog" aria-live="polite">
       <p class="catalog-message catalog-message--loading">Chargement du catalogue…</p>
     </div>
@@ -13,24 +15,199 @@ import CatalogHeader from '../components/CatalogHeader.astro';
 </Layout>
 
 <script>
-  import { fetchCatalog } from '../lib/sheets';
-  import { formatTotalReferences } from '../lib/format';
+  import {
+    applyFilters,
+    buildFilterOptions,
+    EMPTY_FILTERS,
+    hasActiveFilters,
+    type CatalogFilters,
+    type RegionGroupOption,
+  } from '../lib/filters';
+  import { formatCountryName, formatReferenceCount, formatRegionName } from '../lib/format';
+  import { fetchCatalog, groupWinesByCountryAndRegion } from '../lib/sheets';
   import { renderCatalog, renderError } from '../lib/render';
+  import type { CatalogData } from '../lib/types';
 
   const sheetId = import.meta.env.PUBLIC_GOOGLE_SHEET_ID;
   const catalogEl = document.getElementById('catalog');
   const countEl = document.getElementById('reference-count');
+  const filtersEl = document.getElementById('catalog-filters');
+  const toggleEl = document.getElementById('filter-toggle') as HTMLButtonElement | null;
+  const panelEl = document.getElementById('filter-panel');
+  const badgeEl = document.getElementById('filter-active-badge');
+  const searchEl = document.getElementById('filter-search') as HTMLInputElement | null;
+  const countryEl = document.getElementById('filter-country') as HTMLSelectElement | null;
+  const regionEl = document.getElementById('filter-region') as HTMLSelectElement | null;
+  const typeEl = document.getElementById('filter-type') as HTMLSelectElement | null;
+  const inStockEl = document.getElementById('filter-in-stock') as HTMLInputElement | null;
+  const resetEl = document.getElementById('filter-reset') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('filter-status');
+
+  let catalogData: CatalogData | null = null;
+  let filters: CatalogFilters = { ...EMPTY_FILTERS };
+
+  function readFilters(): CatalogFilters {
+    return {
+      search: searchEl?.value ?? '',
+      country: countryEl?.value ?? '',
+      region: regionEl?.value ?? '',
+      type: typeEl?.value ?? '',
+      inStockOnly: inStockEl?.checked ?? false,
+    };
+  }
+
+  function populateSelect(
+    select: HTMLSelectElement,
+    options: string[],
+    placeholder: string,
+    selected: string,
+    formatLabel: (value: string) => string = (value) => value,
+  ) {
+    const current = selected;
+    select.innerHTML = '';
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
+
+    for (const option of options) {
+      const item = document.createElement('option');
+      item.value = option;
+      item.textContent = formatLabel(option);
+      select.appendChild(item);
+    }
+
+    select.value = options.includes(current) ? current : '';
+  }
+
+  function populateRegionSelect(
+    select: HTMLSelectElement,
+    groups: RegionGroupOption[],
+    placeholder: string,
+    selected: string,
+  ) {
+    select.innerHTML = '';
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
+
+    const allRegions: string[] = [];
+    const useOptgroups = groups.length > 1;
+
+    for (const group of groups) {
+      const container = useOptgroups
+        ? (() => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = formatCountryName(group.country);
+            select.appendChild(optgroup);
+            return optgroup;
+          })()
+        : select;
+
+      for (const region of group.regions) {
+        const item = document.createElement('option');
+        item.value = region;
+        item.textContent = formatRegionName(region);
+        container.appendChild(item);
+        allRegions.push(region);
+      }
+    }
+
+    select.value = allRegions.includes(selected) ? selected : '';
+  }
+
+  function updateFilterOptions() {
+    if (!catalogData || !countryEl || !regionEl || !typeEl) return;
+
+    const options = buildFilterOptions(catalogData.wines, filters);
+    populateSelect(countryEl, options.countries, 'Tous les pays', filters.country, formatCountryName);
+    populateRegionSelect(regionEl, options.regionsByCountry, 'Toutes les régions', filters.region);
+    populateSelect(typeEl, options.types, 'Tous les types', filters.type);
+  }
+
+  function updateCatalog() {
+    if (!catalogData || !catalogEl) return;
+
+    filters = readFilters();
+    const filteredWines = applyFilters(catalogData.wines, filters);
+    const countries = groupWinesByCountryAndRegion(filteredWines);
+    const emptyMessage = hasActiveFilters(filters)
+      ? 'Aucune référence ne correspond à vos critères.'
+      : undefined;
+
+    catalogEl.innerHTML = renderCatalog(countries, emptyMessage);
+
+    if (countEl) {
+      countEl.textContent = formatReferenceCount(filteredWines.length, catalogData.totalCount);
+    }
+
+    if (statusEl) {
+      statusEl.textContent = hasActiveFilters(filters)
+        ? `${filteredWines.length} résultat${filteredWines.length > 1 ? 's' : ''}`
+        : '';
+    }
+
+    if (resetEl) {
+      resetEl.hidden = !hasActiveFilters(filters);
+    }
+
+    updateFilterOptions();
+    updateFilterToggle();
+  }
+
+  function updateFilterToggle() {
+    const isOpen = Boolean(panelEl && !panelEl.hidden);
+
+    if (toggleEl) {
+      toggleEl.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    if (badgeEl) {
+      badgeEl.hidden = !hasActiveFilters(filters) || isOpen;
+    }
+  }
+
+  function toggleFilterPanel() {
+    if (!panelEl) return;
+    panelEl.hidden = !panelEl.hidden;
+    updateFilterToggle();
+  }
+
+  function resetFilters() {
+    if (searchEl) searchEl.value = '';
+    if (countryEl) countryEl.value = '';
+    if (regionEl) regionEl.value = '';
+    if (typeEl) typeEl.value = '';
+    if (inStockEl) inStockEl.checked = false;
+    filters = { ...EMPTY_FILTERS };
+    updateCatalog();
+  }
+
+  function bindFilterEvents() {
+    toggleEl?.addEventListener('click', toggleFilterPanel);
+    searchEl?.addEventListener('input', updateCatalog);
+    countryEl?.addEventListener('change', () => {
+      if (regionEl) regionEl.value = '';
+      updateCatalog();
+    });
+    regionEl?.addEventListener('change', updateCatalog);
+    typeEl?.addEventListener('change', updateCatalog);
+    inStockEl?.addEventListener('change', updateCatalog);
+    resetEl?.addEventListener('click', resetFilters);
+  }
 
   async function loadCatalog() {
     if (!catalogEl) return;
 
     try {
-      const data = await fetchCatalog(sheetId);
-      catalogEl.innerHTML = renderCatalog(data.countries);
+      catalogData = await fetchCatalog(sheetId);
 
-      if (countEl) {
-        countEl.textContent = formatTotalReferences(data.totalCount);
-      }
+      if (filtersEl) filtersEl.hidden = false;
+      bindFilterEvents();
+      updateCatalog();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement.';

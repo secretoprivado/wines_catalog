@@ -1,0 +1,71 @@
+---
+
+---
+
+<section class="catalog-filters" id="catalog-filters" hidden aria-label="Filtres du catalogue">
+  <button
+    type="button"
+    class="catalog-filters__trigger"
+    id="filter-toggle"
+    aria-expanded="false"
+    aria-controls="filter-panel"
+  >
+    <span class="catalog-filters__trigger-main">
+      <span class="catalog-filters__trigger-text">Filtrer le catalogue</span>
+      <span class="catalog-filters__trigger-badge" id="filter-active-badge" hidden>
+        Filtres actifs
+      </span>
+    </span>
+    <span class="catalog-filters__trigger-icon" aria-hidden="true"></span>
+  </button>
+
+  <div class="catalog-filters__panel" id="filter-panel" hidden>
+    <div class="catalog-filters__search">
+      <label class="catalog-filters__label" for="filter-search">Rechercher</label>
+      <input
+        class="catalog-filters__input"
+        type="search"
+        id="filter-search"
+        name="search"
+        placeholder="Domaine, cuvée, cépage, appellation…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
+    <div class="catalog-filters__controls">
+      <div class="catalog-filters__field">
+        <label class="catalog-filters__label" for="filter-country">Pays</label>
+        <select class="catalog-filters__select" id="filter-country" name="country">
+          <option value="">Tous les pays</option>
+        </select>
+      </div>
+
+      <div class="catalog-filters__field">
+        <label class="catalog-filters__label" for="filter-region">Région</label>
+        <select class="catalog-filters__select" id="filter-region" name="region">
+          <option value="">Toutes les régions</option>
+        </select>
+      </div>
+
+      <div class="catalog-filters__field">
+        <label class="catalog-filters__label" for="filter-type">Type</label>
+        <select class="catalog-filters__select" id="filter-type" name="type">
+          <option value="">Tous les types</option>
+        </select>
+      </div>
+
+      <label class="catalog-filters__checkbox">
+        <input type="checkbox" id="filter-in-stock" name="inStockOnly" />
+        <span>En stock uniquement</span>
+      </label>
+    </div>
+
+    <div class="catalog-filters__footer">
+      <p class="catalog-filters__status" id="filter-status" aria-live="polite"></p>
+      <button type="button" class="catalog-filters__reset" id="filter-reset" hidden>
+        Réinitialiser les filtres
+      </button>
+    </div>
+  </div>
+</section>

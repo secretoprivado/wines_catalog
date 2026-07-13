@@ -8,6 +8,7 @@ import {
   formatGrape,
   formatPrice,
   formatRegionCount,
+  formatRegionName,
   formatScore,
   formatStockLine,
   formatType,
@@ -146,7 +147,7 @@ function renderRegionSection(group: RegionGroup): string {
   return `
     <section class="region-section">
       <header class="region-section__header">
-        <h3 class="region-section__title">${escapeHtml(group.region)}</h3>
+        <h3 class="region-section__title">${escapeHtml(formatRegionName(group.region))}</h3>
         <span class="region-section__count">${escapeHtml(formatRegionCount(group.wines.length))}</span>
       </header>
       <div class="region-section__wines">
@@ -172,9 +173,11 @@ function renderCountrySection(group: CountryGroup): string {
   `;
 }
 
-export function renderCatalog(countries: CountryGroup[]): string {
+export function renderCatalog(countries: CountryGroup[], emptyMessage?: string): string {
   if (countries.length === 0) {
-    return '<p class="catalog-message">Aucune référence disponible pour le moment.</p>';
+    return `<p class="catalog-message">${escapeHtml(
+      emptyMessage ?? 'Aucune référence disponible pour le moment.',
+    )}</p>`;
   }
 
   return countries.map(renderCountrySection).join('');

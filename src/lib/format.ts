@@ -93,15 +93,23 @@ export function formatFoodPairing(foodPairing: string): string {
   return foodPairing.trim();
 }
 
-export function formatCountryName(country: string): string {
-  const normalized = country.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-  if (normalized === 'france') return 'France';
-  return country
+export function formatPlaceName(name: string): string {
+  return name
     .trim()
     .toLowerCase()
     .split(/\s+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+export function formatCountryName(country: string): string {
+  const normalized = country.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+  if (normalized === 'france') return 'France';
+  return formatPlaceName(country);
+}
+
+export function formatRegionName(region: string): string {
+  return formatPlaceName(region);
 }
 
 export function formatCountryCount(count: number): string {
@@ -114,4 +122,9 @@ export function formatRegionCount(count: number): string {
 
 export function formatTotalReferences(count: number): string {
   return `${count} RÉFÉRENCE${count > 1 ? 'S' : ''}`;
+}
+
+export function formatReferenceCount(filtered: number, total: number): string {
+  if (filtered === total) return formatTotalReferences(total);
+  return `${filtered} SUR ${total} RÉFÉRENCE${total > 1 ? 'S' : ''}`;
 }

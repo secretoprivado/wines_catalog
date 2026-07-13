@@ -226,7 +226,7 @@ function parseRows(
   return wines;
 }
 
-function groupByCountryAndRegion(wines: Wine[]): CountryGroup[] {
+export function groupWinesByCountryAndRegion(wines: Wine[]): CountryGroup[] {
   const countryMap = new Map<string, Map<string, Wine[]>>();
 
   for (const wine of wines) {
@@ -303,7 +303,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
   }
 
   const wines = parseRows(data.table.rows, columnMap);
-  const countries = groupByCountryAndRegion(wines);
+  const countries = groupWinesByCountryAndRegion(wines);
 
   return {
     wines,
