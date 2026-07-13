@@ -45,11 +45,11 @@ const COLUMN_ALIASES: ColumnAliases = {
   type: ['type', 'couleur', 'color'],
   appellation: ['appellation', 'aoc', 'aop'],
   grape: ['cépage(s)', 'cepage(s)', 'cépage', 'cepage', 'grape', 'variety', 'variété', 'variete'],
-  aging: ['temps de garde', 'garde'],
+  aging: ['potentiel de garde', 'temps de garde', 'garde'],
   scoreParker: ['notes critiques parker', 'parker'],
   scoreRvf: ['notes critiques revue du vin de france', 'revue du vin de france', 'revue du vin', 'rvf'],
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
-  foodPairing: ['type de plat', 'plat', 'accord'],
+  foodPairing: ['exemple de plat', 'type de plat', 'accord mets', 'accord'],
   price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
 
@@ -75,9 +75,7 @@ function findColumnIndex(headers: string[], aliases: string[]): number {
   for (const alias of aliases) {
     const normalizedAlias = normalizeHeader(alias);
     const partialIndex = normalizedHeaders.findIndex(
-      (header) =>
-        header.length > 0 &&
-        (header.includes(normalizedAlias) || normalizedAlias.includes(header)),
+      (header) => header.length > 0 && header.includes(normalizedAlias),
     );
     if (partialIndex !== -1) return partialIndex;
   }
