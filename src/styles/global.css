@@ -28,6 +28,8 @@
 
   --content-width: 64rem;
   --page-padding: clamp(1.25rem, 4vw, 3rem);
+  --sticky-country-height: clamp(3.5rem, 9vw, 4.25rem);
+  --sticky-stack-gap: 0.625rem;
 }
 
 html {
@@ -160,13 +162,17 @@ img {
 }
 
 .country-section__header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  padding-bottom: 1rem;
+  padding: 0.75rem 0 1rem;
   margin-bottom: 0.5rem;
   border-bottom: 2px solid var(--border);
+  background: var(--background);
 }
 
 .country-section__title {
@@ -209,11 +215,17 @@ img {
 }
 
 .region-section__header {
+  position: sticky;
+  top: calc(var(--sticky-country-height) + var(--sticky-stack-gap));
+  z-index: 20;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0.625rem 0 0.75rem;
   margin-bottom: 1.25rem;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 
 .region-section__title {
