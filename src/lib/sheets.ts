@@ -34,6 +34,7 @@ interface ColumnAliases {
   stock: string[];
   volume: string[];
   foodPairing: string[];
+  comment: string[];
   price: string[];
 }
 
@@ -52,6 +53,7 @@ const COLUMN_ALIASES: ColumnAliases = {
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
   volume: ['contenant (cl)', 'contenant', 'volume', 'cl'],
   foodPairing: ['exemple de plat', 'type de plat', 'accord mets', 'accord'],
+  comment: ['commentaire', 'comment', 'remarque'],
   price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
 
@@ -216,6 +218,7 @@ function parseRows(
       stock: parseNumber(getRowValue(row, columnMap.stock)),
       volume: parseNumber(getRowValue(row, columnMap.volume)),
       foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
+      comment: parseText(getRowValue(row, columnMap.comment)),
       price: parseNumber(getRowValue(row, columnMap.price)),
     });
   }
@@ -291,6 +294,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     stock: findColumnIndex(headers, COLUMN_ALIASES.stock),
     volume: findColumnIndex(headers, COLUMN_ALIASES.volume),
     foodPairing: findColumnIndex(headers, COLUMN_ALIASES.foodPairing),
+    comment: findColumnIndex(headers, COLUMN_ALIASES.comment),
     price: findColumnIndex(headers, COLUMN_ALIASES.price),
   };
 

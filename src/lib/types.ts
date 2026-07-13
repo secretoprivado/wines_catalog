@@ -13,6 +13,7 @@ export interface Wine {
   stock: number | null;
   volume: number | null;
   foodPairing: string;
+  comment: string;
   price: number | null;
 }
 

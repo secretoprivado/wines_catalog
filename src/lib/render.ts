@@ -70,6 +70,18 @@ function buildDetails(wine: Wine): DetailItem[] {
   return details;
 }
 
+function renderComment(wine: Wine): string {
+  if (!wine.comment) return '';
+
+  return `
+    <aside class="wine-row__comment" aria-label="Information complémentaire">
+      <span class="wine-row__comment-marker" aria-hidden="true">✦</span>
+      <span class="wine-row__comment-label">Note</span>
+      <p class="wine-row__comment-text">${escapeHtml(wine.comment)}</p>
+    </aside>
+  `;
+}
+
 function renderDetail(item: DetailItem): string {
   const dot = item.typeDot
     ? `<span class="wine-detail__dot" style="background-color: ${item.typeDot}"></span>`
@@ -100,6 +112,8 @@ function renderWineRow(wine: Wine): string {
     ? `<span class="wine-row__stock">${escapeHtml(stock)}</span>`
     : '';
 
+  const commentHtml = renderComment(wine);
+
   const detailsHtml =
     details.length > 0
       ? `<dl class="wine-row__details">${details.map(renderDetail).join('')}</dl>`
@@ -120,6 +134,7 @@ function renderWineRow(wine: Wine): string {
           <span class="wine-row__price">${escapeHtml(formatPrice(wine.price))}</span>
         </div>
       </div>
+      ${commentHtml}
       ${detailsHtml}
     </article>
   `;
