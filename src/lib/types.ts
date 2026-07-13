@@ -11,6 +11,7 @@ export interface Wine {
   scoreParker: number | null;
   scoreRvf: number | null;
   stock: number | null;
+  volume: number | null;
   foodPairing: string;
   price: number | null;
 }

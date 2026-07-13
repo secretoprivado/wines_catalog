@@ -32,6 +32,7 @@ interface ColumnAliases {
   scoreParker: string[];
   scoreRvf: string[];
   stock: string[];
+  volume: string[];
   foodPairing: string[];
   price: string[];
 }
@@ -49,6 +50,7 @@ const COLUMN_ALIASES: ColumnAliases = {
   scoreParker: ['notes critiques parker', 'parker'],
   scoreRvf: ['notes critiques revue du vin de france', 'revue du vin de france', 'revue du vin', 'rvf'],
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
+  volume: ['contenant (cl)', 'contenant', 'volume', 'cl'],
   foodPairing: ['exemple de plat', 'type de plat', 'accord mets', 'accord'],
   price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
@@ -212,6 +214,7 @@ function parseRows(
       scoreParker: parseNumber(getRowValue(row, columnMap.scoreParker)),
       scoreRvf: parseNumber(getRowValue(row, columnMap.scoreRvf)),
       stock: parseNumber(getRowValue(row, columnMap.stock)),
+      volume: parseNumber(getRowValue(row, columnMap.volume)),
       foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
       price: parseNumber(getRowValue(row, columnMap.price)),
     });
@@ -286,6 +289,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     scoreParker: findColumnIndex(headers, COLUMN_ALIASES.scoreParker),
     scoreRvf: findColumnIndex(headers, COLUMN_ALIASES.scoreRvf),
     stock: findColumnIndex(headers, COLUMN_ALIASES.stock),
+    volume: findColumnIndex(headers, COLUMN_ALIASES.volume),
     foodPairing: findColumnIndex(headers, COLUMN_ALIASES.foodPairing),
     price: findColumnIndex(headers, COLUMN_ALIASES.price),
   };

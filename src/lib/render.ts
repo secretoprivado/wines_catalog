@@ -9,7 +9,7 @@ import {
   formatPrice,
   formatRegionCount,
   formatScore,
-  formatStock,
+  formatStockLine,
   formatType,
   formatVintage,
   getTypeDotColor,
@@ -85,7 +85,7 @@ function renderDetail(item: DetailItem): string {
 
 function renderWineRow(wine: Wine): string {
   const vintage = formatVintage(wine.vintage);
-  const stock = formatStock(wine.stock);
+  const stock = formatStockLine(wine.stock, wine.volume);
   const details = buildDetails(wine);
 
   const vintageHtml = vintage

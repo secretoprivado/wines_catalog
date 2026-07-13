@@ -26,6 +26,20 @@ export function formatStock(stock: number | null): string | null {
   return `${stock} BTL.`;
 }
 
+export function formatVolume(volume: number | null): string | null {
+  if (volume === null) return null;
+  const rounded = Number.isInteger(volume) ? volume : Math.round(volume);
+  return `${rounded}cl`;
+}
+
+export function formatStockLine(stock: number | null, volume: number | null): string | null {
+  const stockPart = formatStock(stock);
+  const volumePart = formatVolume(volume);
+
+  if (stockPart && volumePart) return `${stockPart} ${volumePart}`;
+  return stockPart ?? volumePart;
+}
+
 export function formatPrice(price: number | null): string {
   if (price === null) return '—';
   const formatted = Number.isInteger(price) ? String(price) : price.toFixed(2).replace('.', ',');
