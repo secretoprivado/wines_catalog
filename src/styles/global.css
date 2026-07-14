@@ -90,11 +90,30 @@ img {
 }
 
 .catalog-header__subtitle {
-  margin: 0 auto 2rem;
+  margin: 0 auto 1.25rem;
   max-width: 32rem;
   font-size: 0.9375rem;
   line-height: 1.7;
   color: var(--muted-foreground);
+}
+
+.catalog-header__order {
+  margin: 0 auto 2rem;
+  max-width: 32rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.catalog-header__order-link {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.catalog-header__order-link:hover {
+  color: var(--accent);
 }
 
 .catalog-header__count {
