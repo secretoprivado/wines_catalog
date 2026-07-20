@@ -41,9 +41,13 @@ export function formatStockLine(stock: number | null, volume: number | null): st
 }
 
 export function formatPrice(price: number | null): string {
-  if (price === null) return '—';
+  if (price === null) return 'prix sur demande';
   const formatted = Number.isInteger(price) ? String(price) : price.toFixed(2).replace('.', ',');
   return `${formatted} €`;
+}
+
+export function isPriceOnRequest(price: number | null): boolean {
+  return price === null;
 }
 
 export function formatScore(score: number | null): string | null {

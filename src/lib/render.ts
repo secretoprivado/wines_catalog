@@ -15,6 +15,7 @@ import {
   formatType,
   formatVintage,
   getTypeDotColor,
+  isPriceOnRequest,
 } from './format';
 
 function escapeHtml(value: string): string {
@@ -174,7 +175,7 @@ function renderWineRow(wine: Wine): string {
         </div>
         <div class="wine-row__commerce">
           ${stockHtml}
-          <span class="wine-row__price">${escapeHtml(formatPrice(wine.price))}</span>
+          <span class="wine-row__price${isPriceOnRequest(wine.price) ? ' wine-row__price--on-request' : ''}">${escapeHtml(formatPrice(wine.price))}</span>
         </div>
       </div>
       ${commentHtml}
