@@ -10,6 +10,7 @@ export interface Wine {
   aging: string;
   scoreParker: number | null;
   scoreRvf: number | null;
+  scoreMichelin: number | null;
   stock: number | null;
   volume: number | null;
   foodPairing: string;

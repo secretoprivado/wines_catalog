@@ -6,6 +6,7 @@ import {
   formatCountryName,
   formatFoodPairing,
   formatGrape,
+  formatMichelinScore,
   formatPrice,
   formatRegionCount,
   formatRegionName,
@@ -28,6 +29,11 @@ interface DetailItem {
   label: string;
   value: string;
   typeDot?: string;
+}
+
+interface ScoreItem {
+  label: string;
+  value: string;
 }
 
 function buildDetails(wine: Wine): DetailItem[] {
@@ -54,21 +60,32 @@ function buildDetails(wine: Wine): DetailItem[] {
     details.push({ label: 'Garde', value: aging });
   }
 
-  const parker = formatScore(wine.scoreParker);
-  if (parker) {
-    details.push({ label: 'Parker', value: parker });
-  }
-
-  const rvf = formatScore(wine.scoreRvf);
-  if (rvf) {
-    details.push({ label: 'RVF', value: rvf });
-  }
-
   if (wine.foodPairing) {
     details.push({ label: 'Accord', value: formatFoodPairing(wine.foodPairing) });
   }
 
   return details;
+}
+
+function buildScores(wine: Wine): ScoreItem[] {
+  const scores: ScoreItem[] = [];
+
+  const parker = formatScore(wine.scoreParker);
+  if (parker) {
+    scores.push({ label: 'Parker', value: parker });
+  }
+
+  const rvf = formatScore(wine.scoreRvf);
+  if (rvf) {
+    scores.push({ label: 'RVF', value: rvf });
+  }
+
+  const michelin = formatMichelinScore(wine.scoreMichelin);
+  if (michelin) {
+    scores.push({ label: 'Michelin', value: michelin });
+  }
+
+  return scores;
 }
 
 function renderComment(wine: Wine): string {
@@ -96,10 +113,33 @@ function renderDetail(item: DetailItem): string {
   `;
 }
 
+function renderScore(item: ScoreItem): string {
+  return `
+    <span class="wine-score">
+      <span class="wine-score__label">${escapeHtml(item.label)}</span>
+      <span class="wine-score__value">${escapeHtml(item.value)}</span>
+    </span>
+  `;
+}
+
+function renderScores(scores: ScoreItem[]): string {
+  if (scores.length === 0) return '';
+
+  return `
+    <div class="wine-row__scores" aria-label="Notes critiques">
+      <span class="wine-row__scores-heading">Notes</span>
+      <div class="wine-row__scores-list">
+        ${scores.map(renderScore).join('<span class="wine-row__scores-sep" aria-hidden="true">|</span>')}
+      </div>
+    </div>
+  `;
+}
+
 function renderWineRow(wine: Wine): string {
   const vintage = formatVintage(wine.vintage);
   const stock = formatStockLine(wine.stock, wine.volume);
   const details = buildDetails(wine);
+  const scores = buildScores(wine);
 
   const vintageHtml = vintage
     ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
@@ -120,6 +160,8 @@ function renderWineRow(wine: Wine): string {
       ? `<dl class="wine-row__details">${details.map(renderDetail).join('')}</dl>`
       : '';
 
+  const scoresHtml = renderScores(scores);
+
   return `
     <article class="wine-row">
       <div class="wine-row__header">
@@ -137,6 +179,7 @@ function renderWineRow(wine: Wine): string {
       </div>
       ${commentHtml}
       ${detailsHtml}
+      ${scoresHtml}
     </article>
   `;
 }

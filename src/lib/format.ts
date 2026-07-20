@@ -52,6 +52,12 @@ export function formatScore(score: number | null): string | null {
   return `${rounded} / 100`;
 }
 
+export function formatMichelinScore(score: number | null): string | null {
+  if (score === null || Number.isNaN(score)) return null;
+  const rounded = Number.isInteger(score) ? score : Math.round(score);
+  return rounded <= 1 ? `${rounded} grappe` : `${rounded} grappes`;
+}
+
 export function formatVintage(vintage: string | null): string | null {
   if (!vintage) return null;
   return vintage;

@@ -31,6 +31,7 @@ interface ColumnAliases {
   aging: string[];
   scoreParker: string[];
   scoreRvf: string[];
+  scoreMichelin: string[];
   stock: string[];
   volume: string[];
   foodPairing: string[];
@@ -50,6 +51,12 @@ const COLUMN_ALIASES: ColumnAliases = {
   aging: ['potentiel de garde', 'temps de garde', 'garde'],
   scoreParker: ['notes critiques parker', 'parker'],
   scoreRvf: ['notes critiques revue du vin de france', 'revue du vin de france', 'revue du vin', 'rvf'],
+  scoreMichelin: [
+    'grappes michelin du domaine',
+    'grappes michelin',
+    'michelin du domaine',
+    'michelin',
+  ],
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
   volume: ['contenant (cl)', 'contenant', 'volume', 'cl'],
   foodPairing: ['exemple de plat', 'type de plat', 'accord mets', 'accord'],
@@ -215,6 +222,7 @@ function parseRows(
       aging: parseText(getRowValue(row, columnMap.aging)),
       scoreParker: parseNumber(getRowValue(row, columnMap.scoreParker)),
       scoreRvf: parseNumber(getRowValue(row, columnMap.scoreRvf)),
+      scoreMichelin: parseNumber(getRowValue(row, columnMap.scoreMichelin)),
       stock: parseNumber(getRowValue(row, columnMap.stock)),
       volume: parseNumber(getRowValue(row, columnMap.volume)),
       foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
@@ -291,6 +299,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     aging: findColumnIndex(headers, COLUMN_ALIASES.aging),
     scoreParker: findColumnIndex(headers, COLUMN_ALIASES.scoreParker),
     scoreRvf: findColumnIndex(headers, COLUMN_ALIASES.scoreRvf),
+    scoreMichelin: findColumnIndex(headers, COLUMN_ALIASES.scoreMichelin),
     stock: findColumnIndex(headers, COLUMN_ALIASES.stock),
     volume: findColumnIndex(headers, COLUMN_ALIASES.volume),
     foodPairing: findColumnIndex(headers, COLUMN_ALIASES.foodPairing),
