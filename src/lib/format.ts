@@ -61,16 +61,16 @@ export function formatAging(aging: string): string | null {
   const value = aging.trim();
   if (!value) return null;
 
-  if (value.includes('+') || value.includes('-')) {
-    return value;
-  }
-
   if (/\d\s*ans$/i.test(value)) {
     return value;
   }
 
   if (/\d\s*an$/i.test(value)) {
     return value.replace(/\s*an$/i, ' ans');
+  }
+
+  if (value.includes('+') || value.includes('-')) {
+    return `${value} ans`;
   }
 
   const parsed = Number.parseInt(value, 10);

@@ -132,6 +132,9 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (!catalogData || !catalogEl) return;
 
     filters = readFilters();
+    updateFilterOptions();
+    filters = readFilters();
+
     const filteredWines = applyFilters(catalogData.wines, filters);
     const countries = groupWinesByCountryAndRegion(filteredWines);
     const emptyMessage = hasActiveFilters(filters)
@@ -154,7 +157,6 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       resetEl.hidden = !hasActiveFilters(filters);
     }
 
-    updateFilterOptions();
     updateFilterToggle();
   }
 

@@ -97,16 +97,25 @@ export function hasActiveFilters(filters: CatalogFilters): boolean {
   );
 }
 
+function buildTypes(wines: Wine[], filters: CatalogFilters): string[] {
+  const source = wines.filter((wine) => {
+    if (filters.country && wine.country !== filters.country) return false;
+    if (filters.region && wine.region !== filters.region) return false;
+    return true;
+  });
+
+  return [...new Set(source.map((wine) => wine.type).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  );
+}
+
 export function buildFilterOptions(wines: Wine[], filters: CatalogFilters): FilterOptions {
   const countries = [...new Set(wines.map((wine) => wine.country).filter(Boolean))].sort(
     compareCountries,
   );
 
   const regionsByCountry = buildRegionsByCountry(wines, filters.country);
-
-  const types = [...new Set(wines.map((wine) => wine.type).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'fr'),
-  );
+  const types = buildTypes(wines, filters);
 
   return { countries, regionsByCountry, types };
 }
