@@ -17,6 +17,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
 <script>
   import {
     applyFilters,
+    applySpiritFilters,
     buildFilterOptions,
     EMPTY_FILTERS,
     hasActiveFilters,
@@ -24,11 +25,18 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     type RegionGroupOption,
   } from '../lib/filters';
   import { formatCountryName, formatReferenceCount, formatRegionName } from '../lib/format';
-  import { fetchCatalog, groupWinesByCountryAndRegion } from '../lib/sheets';
-  import { renderCatalog, renderError } from '../lib/render';
-  import type { CatalogData } from '../lib/types';
+  import {
+    fetchCatalog,
+    fetchSpiritsCatalog,
+    groupSpiritsByTypeAndCategory,
+    groupWinesByCountryAndRegion,
+  } from '../lib/sheets';
+  import { renderCatalog, renderCatalogParts, renderError, renderSpiritsCatalog } from '../lib/render';
+  import type { CatalogData, SpiritsCatalogData } from '../lib/types';
 
   const sheetId = import.meta.env.PUBLIC_GOOGLE_SHEET_ID;
+  const spiritsSheetName =
+    import.meta.env.PUBLIC_GOOGLE_SHEET_SPIRITS_TAB || 'Feuille 3';
   const catalogEl = document.getElementById('catalog');
   const countEl = document.getElementById('reference-count');
   const filtersEl = document.getElementById('catalog-filters');
@@ -44,6 +52,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const statusEl = document.getElementById('filter-status');
 
   let catalogData: CatalogData | null = null;
+  let spiritsData: SpiritsCatalogData | null = null;
   let filters: CatalogFilters = { ...EMPTY_FILTERS };
 
   function readFilters(): CatalogFilters {
@@ -122,7 +131,8 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   function updateFilterOptions() {
     if (!catalogData || !countryEl || !regionEl || !typeEl) return;
 
-    const options = buildFilterOptions(catalogData.wines, filters);
+    const spirits = spiritsData?.spirits ?? [];
+    const options = buildFilterOptions(catalogData.wines, spirits, filters);
     populateSelect(countryEl, options.countries, 'Tous les pays', filters.country, formatCountryName);
     populateRegionSelect(regionEl, options.regionsByCountry, 'Toutes les régions', filters.region);
     populateSelect(typeEl, options.types, 'Tous les types', filters.type);
@@ -136,20 +146,37 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     filters = readFilters();
 
     const filteredWines = applyFilters(catalogData.wines, filters);
+    const filteredSpirits = applySpiritFilters(spiritsData?.spirits ?? [], filters);
     const countries = groupWinesByCountryAndRegion(filteredWines);
+    const spiritTypes = groupSpiritsByTypeAndCategory(filteredSpirits);
+
+    const winesHtml = renderCatalog(countries, '');
+    const spiritsHtml = renderSpiritsCatalog(spiritTypes);
     const emptyMessage = hasActiveFilters(filters)
       ? 'Aucune référence ne correspond à vos critères.'
       : undefined;
 
-    catalogEl.innerHTML = renderCatalog(countries, emptyMessage);
+    const hasWines = filteredWines.length > 0;
+    const hasSpirits = filteredSpirits.length > 0;
+
+    catalogEl.innerHTML = renderCatalogParts({
+      winesHtml,
+      spiritsHtml,
+      showWinesHeading: hasWines && hasSpirits,
+      showSpiritsHeading: hasSpirits,
+      emptyMessage,
+    });
+
+    const filteredTotal = filteredWines.length + filteredSpirits.length;
+    const totalCount = catalogData.totalCount + (spiritsData?.totalCount ?? 0);
 
     if (countEl) {
-      countEl.textContent = formatReferenceCount(filteredWines.length, catalogData.totalCount);
+      countEl.textContent = formatReferenceCount(filteredTotal, totalCount);
     }
 
     if (statusEl) {
       statusEl.textContent = hasActiveFilters(filters)
-        ? `${filteredWines.length} résultat${filteredWines.length > 1 ? 's' : ''}`
+        ? `${filteredTotal} résultat${filteredTotal > 1 ? 's' : ''}`
         : '';
     }
 
@@ -205,7 +232,13 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (!catalogEl) return;
 
     try {
-      catalogData = await fetchCatalog(sheetId);
+      const [wines, spirits] = await Promise.all([
+        fetchCatalog(sheetId),
+        fetchSpiritsCatalog(sheetId, spiritsSheetName).catch(() => null),
+      ]);
+
+      catalogData = wines;
+      spiritsData = spirits;
 
       if (filtersEl) filtersEl.hidden = false;
       bindFilterEvents();

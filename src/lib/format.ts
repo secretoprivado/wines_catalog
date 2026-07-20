@@ -130,6 +130,27 @@ export function formatRegionCount(count: number): string {
   return `${count} CUVÉE${count > 1 ? 'S' : ''}`;
 }
 
+export function formatSpiritTypeCount(count: number): string {
+  return `${count} CATÉGORIE${count > 1 ? 'S' : ''}`;
+}
+
+export function formatSpiritCategoryCount(count: number): string {
+  return `${count} RÉFÉRENCE${count > 1 ? 'S' : ''}`;
+}
+
+export function formatAbv(abv: number | null): string | null {
+  if (abv === null) return null;
+  const rounded = Number.isInteger(abv) ? abv : Math.round(abv * 10) / 10;
+  return `${rounded}°`;
+}
+
+export function formatPpm(ppm: string): string | null {
+  const value = ppm.trim();
+  if (!value) return null;
+  if (/ppm/i.test(value)) return value;
+  return `${value} PPM`;
+}
+
 export function formatTotalReferences(count: number): string {
   return `${count} RÉFÉRENCE${count > 1 ? 'S' : ''}`;
 }

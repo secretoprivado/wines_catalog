@@ -378,6 +378,31 @@ img {
   }
 }
 
+/* Catalog parts (vins / spiritueux) */
+
+.catalog-part-header {
+  margin: 0 0 1.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 2px solid var(--primary);
+}
+
+.catalog-part-header--spaced {
+  margin-top: clamp(3rem, 8vw, 4.5rem);
+}
+
+.catalog-part-header__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--primary);
+}
+
+.catalog-part + .catalog-part-header--spaced {
+  margin-top: clamp(3rem, 8vw, 4.5rem);
+}
+
 /* Country sections */
 
 .country-section {
@@ -386,6 +411,14 @@ img {
 
 .country-section:last-child {
   margin-bottom: 0;
+}
+
+.country-section--flat {
+  margin-bottom: 2rem;
+}
+
+.country-section--flat .region-section__header {
+  top: 0;
 }
 
 .country-section__header {

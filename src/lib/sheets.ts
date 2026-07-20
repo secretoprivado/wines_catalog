@@ -1,4 +1,11 @@
-import type { CatalogData, CountryGroup, RegionGroup, Wine } from './types';
+import type {
+  CatalogData,
+  CountryGroup,
+  Spirit,
+  SpiritsCatalogData,
+  SpiritTypeGroup,
+  Wine,
+} from './types';
 import { formatCountryName } from './format';
 
 interface GvizCell {
@@ -39,6 +46,24 @@ interface ColumnAliases {
   price: string[];
 }
 
+interface SpiritColumnAliases {
+  alcoholType: string[];
+  category: string[];
+  origin: string[];
+  distillery: string[];
+  label: string[];
+  abv: string[];
+  volume: string[];
+  rawMaterial: string[];
+  aging: string[];
+  ppm: string[];
+  foodPairing: string[];
+  vintage: string[];
+  price: string[];
+  comment: string[];
+  stock: string[];
+}
+
 const COLUMN_ALIASES: ColumnAliases = {
   country: ['pays', 'country', 'nation'],
   region: ['région', 'region', 'règion', 'cave secreto privado'],
@@ -63,6 +88,26 @@ const COLUMN_ALIASES: ColumnAliases = {
   comment: ['commentaire', 'comment', 'remarque'],
   price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
+
+const SPIRIT_COLUMN_ALIASES: SpiritColumnAliases = {
+  alcoholType: ["type d'alcool", 'type alcool', 'alcool'],
+  category: ['catégorie', 'categorie', 'category'],
+  origin: ['origine', 'origin'],
+  distillery: ['distillerie', 'distillery', 'producteur', 'domaine'],
+  label: ['etiquette', 'étiquette', 'label', 'nom', 'référence', 'reference'],
+  abv: ["degré d'alcool", 'degre', 'degré', 'abv', 'alcool %', '% vol'],
+  volume: ['volume', 'contenant', 'cl'],
+  rawMaterial: ['matière première', 'matiere premiere', 'raw material'],
+  aging: ['vieillissement', 'élevage', 'elevage', 'aging', 'âge', 'age'],
+  ppm: ['ppm', 'tourbe', 'peat'],
+  foodPairing: ['accords mets', 'accord mets', 'accord', 'exemple de plat'],
+  vintage: ['millésime', 'millesime', 'vintage', 'année', 'annee'],
+  price: ['prix', 'price', 'tarif'],
+  comment: ['commentaire', 'comment', 'remarque'],
+  stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
+};
+
+const DEFAULT_SPIRITS_SHEET = 'Feuille 3';
 
 function normalizeHeader(header: string): string {
   return header
@@ -151,6 +196,16 @@ function sortWines(wines: Wine[]): Wine[] {
   });
 }
 
+function sortSpirits(spirits: Spirit[]): Spirit[] {
+  return spirits.sort((a, b) => {
+    const distilleryCompare = a.distillery.localeCompare(b.distillery, 'fr');
+    if (distilleryCompare !== 0) return distilleryCompare;
+    const labelCompare = a.label.localeCompare(b.label, 'fr');
+    if (labelCompare !== 0) return labelCompare;
+    return (a.vintage ?? '').localeCompare(b.vintage ?? '', 'fr');
+  });
+}
+
 function parseRows(
   rows: GvizRow[],
   columnMap: Record<keyof ColumnAliases, number>,
@@ -234,6 +289,68 @@ function parseRows(
   return wines;
 }
 
+function parseSpiritRows(
+  rows: GvizRow[],
+  columnMap: Record<keyof SpiritColumnAliases, number>,
+): Spirit[] {
+  let currentAlcoholType = '';
+  let currentCategory = '';
+  const spirits: Spirit[] = [];
+
+  for (const row of rows) {
+    const alcoholTypeValue = getRowValue(row, columnMap.alcoholType);
+    const categoryValue = getRowValue(row, columnMap.category);
+    const distilleryValue = getRowValue(row, columnMap.distillery);
+    const labelValue = getRowValue(row, columnMap.label);
+
+    const hasAlcoholTypeOnRow =
+      alcoholTypeValue !== null && String(alcoholTypeValue).trim() !== '';
+    const hasCategoryOnRow = categoryValue !== null && String(categoryValue).trim() !== '';
+    const hasDistilleryOnRow =
+      distilleryValue !== null && String(distilleryValue).trim() !== '';
+    const hasLabelOnRow = labelValue !== null && String(labelValue).trim() !== '';
+
+    if (hasAlcoholTypeOnRow) {
+      const newType = String(alcoholTypeValue).trim();
+      if (newType !== currentAlcoholType) {
+        currentAlcoholType = newType;
+        currentCategory = '';
+      }
+    }
+
+    if (hasCategoryOnRow) {
+      currentCategory = String(categoryValue).trim();
+    }
+
+    if (!currentAlcoholType || !currentCategory) continue;
+    if (!hasDistilleryOnRow && !hasLabelOnRow) continue;
+
+    const distillery = hasDistilleryOnRow ? String(distilleryValue).trim() : '';
+    const label = hasLabelOnRow ? String(labelValue).trim() : '';
+    if (!distillery && !label) continue;
+
+    spirits.push({
+      alcoholType: currentAlcoholType,
+      category: currentCategory,
+      origin: parseText(getRowValue(row, columnMap.origin)),
+      distillery,
+      label,
+      abv: parseNumber(getRowValue(row, columnMap.abv)),
+      volume: parseNumber(getRowValue(row, columnMap.volume)),
+      rawMaterial: parseText(getRowValue(row, columnMap.rawMaterial)),
+      aging: parseText(getRowValue(row, columnMap.aging)),
+      ppm: parseText(getRowValue(row, columnMap.ppm)),
+      foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
+      vintage: parseVintage(getRowValue(row, columnMap.vintage)),
+      price: parseNumber(getRowValue(row, columnMap.price)),
+      comment: parseText(getRowValue(row, columnMap.comment)),
+      stock: parseNumber(getRowValue(row, columnMap.stock)),
+    });
+  }
+
+  return spirits;
+}
+
 export function groupWinesByCountryAndRegion(wines: Wine[]): CountryGroup[] {
   const countryMap = new Map<string, Map<string, Wine[]>>();
 
@@ -262,6 +379,34 @@ export function groupWinesByCountryAndRegion(wines: Wine[]): CountryGroup[] {
     }));
 }
 
+export function groupSpiritsByTypeAndCategory(spirits: Spirit[]): SpiritTypeGroup[] {
+  const typeMap = new Map<string, Map<string, Spirit[]>>();
+
+  for (const spirit of spirits) {
+    const typeKey = spirit.alcoholType || 'Non renseigné';
+    if (!typeMap.has(typeKey)) {
+      typeMap.set(typeKey, new Map());
+    }
+
+    const categoryMap = typeMap.get(typeKey)!;
+    const existing = categoryMap.get(spirit.category) ?? [];
+    existing.push(spirit);
+    categoryMap.set(spirit.category, existing);
+  }
+
+  return Array.from(typeMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+    .map(([alcoholType, categoryMap]) => ({
+      alcoholType,
+      categories: Array.from(categoryMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+        .map(([category, categorySpirits]) => ({
+          category,
+          spirits: sortSpirits(categorySpirits),
+        })),
+    }));
+}
+
 function parseGvizResponse(text: string): GvizResponse {
   const jsonStart = text.indexOf('{');
   const jsonEnd = text.lastIndexOf('}');
@@ -271,12 +416,13 @@ function parseGvizResponse(text: string): GvizResponse {
   return JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as GvizResponse;
 }
 
-export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
-  if (!sheetId) {
-    throw new Error('Identifiant Google Sheet manquant.');
+async function fetchGvizTable(sheetId: string, sheetName?: string): Promise<GvizTable> {
+  const params = new URLSearchParams({ tqx: 'out:json' });
+  if (sheetName) {
+    params.set('sheet', sheetName);
   }
 
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?${params.toString()}`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -284,8 +430,16 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
   }
 
   const text = await response.text();
-  const data = parseGvizResponse(text);
-  const headers = data.table.cols.map((col) => col.label);
+  return parseGvizResponse(text).table;
+}
+
+export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
+  if (!sheetId) {
+    throw new Error('Identifiant Google Sheet manquant.');
+  }
+
+  const table = await fetchGvizTable(sheetId);
+  const headers = table.cols.map((col) => col.label);
 
   const columnMap = {
     country: findColumnIndex(headers, COLUMN_ALIASES.country),
@@ -311,12 +465,62 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     throw new Error('Colonnes requises manquantes (Région, Domaine, Cuvée).');
   }
 
-  const wines = parseRows(data.table.rows, columnMap);
+  const wines = parseRows(table.rows, columnMap);
   const countries = groupWinesByCountryAndRegion(wines);
 
   return {
     wines,
     countries,
     totalCount: wines.length,
+  };
+}
+
+export async function fetchSpiritsCatalog(
+  sheetId: string,
+  sheetName = DEFAULT_SPIRITS_SHEET,
+): Promise<SpiritsCatalogData> {
+  if (!sheetId) {
+    throw new Error('Identifiant Google Sheet manquant.');
+  }
+
+  const table = await fetchGvizTable(sheetId, sheetName);
+  const headers = table.cols.map((col) => col.label);
+
+  const columnMap = {
+    alcoholType: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.alcoholType),
+    category: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.category),
+    origin: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.origin),
+    distillery: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.distillery),
+    label: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.label),
+    abv: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.abv),
+    volume: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.volume),
+    rawMaterial: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.rawMaterial),
+    aging: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.aging),
+    ppm: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.ppm),
+    foodPairing: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.foodPairing),
+    vintage: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.vintage),
+    price: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.price),
+    comment: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.comment),
+    stock: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.stock),
+  };
+
+  if (
+    columnMap.alcoholType === -1 ||
+    columnMap.category === -1 ||
+    columnMap.distillery === -1 ||
+    columnMap.label === -1
+  ) {
+    throw new Error(
+      "Colonnes requises manquantes (Type d'alcool, Catégorie, Distillerie, Étiquette).",
+    );
+  }
+
+  const spirits = parseSpiritRows(table.rows, columnMap);
+  const types = groupSpiritsByTypeAndCategory(spirits);
+
+  return {
+    spirits,
+    types,
+    totalCount: spirits.length,
   };
 }

@@ -1,5 +1,13 @@
-import type { CountryGroup, RegionGroup, Wine } from './types';
+import type {
+  CountryGroup,
+  RegionGroup,
+  Spirit,
+  SpiritCategoryGroup,
+  SpiritTypeGroup,
+  Wine,
+} from './types';
 import {
+  formatAbv,
   formatAging,
   formatAppellation,
   formatCountryCount,
@@ -7,10 +15,13 @@ import {
   formatFoodPairing,
   formatGrape,
   formatMichelinScore,
+  formatPpm,
   formatPrice,
   formatRegionCount,
   formatRegionName,
   formatScore,
+  formatSpiritCategoryCount,
+  formatSpiritTypeCount,
   formatStockLine,
   formatType,
   formatVintage,
@@ -219,12 +230,208 @@ function renderCountrySection(group: CountryGroup): string {
 
 export function renderCatalog(countries: CountryGroup[], emptyMessage?: string): string {
   if (countries.length === 0) {
+    if (emptyMessage === '') return '';
     return `<p class="catalog-message">${escapeHtml(
       emptyMessage ?? 'Aucune référence disponible pour le moment.',
     )}</p>`;
   }
 
   return countries.map(renderCountrySection).join('');
+}
+
+function buildSpiritDetails(spirit: Spirit): DetailItem[] {
+  const details: DetailItem[] = [];
+
+  if (spirit.origin) {
+    details.push({ label: 'Origine', value: spirit.origin.trim() });
+  }
+
+  const abv = formatAbv(spirit.abv);
+  if (abv) {
+    details.push({ label: 'Degré', value: abv });
+  }
+
+  if (spirit.rawMaterial) {
+    details.push({ label: 'Matière', value: spirit.rawMaterial.trim() });
+  }
+
+  if (spirit.aging) {
+    details.push({ label: 'Vieillissement', value: spirit.aging.trim() });
+  }
+
+  const ppm = formatPpm(spirit.ppm);
+  if (ppm) {
+    details.push({ label: 'Tourbe', value: ppm });
+  }
+
+  if (spirit.foodPairing) {
+    details.push({ label: 'Accord', value: formatFoodPairing(spirit.foodPairing) });
+  }
+
+  return details;
+}
+
+function renderSpiritComment(spirit: Spirit): string {
+  if (!spirit.comment) return '';
+
+  return `
+    <aside class="wine-row__comment" aria-label="Information complémentaire">
+      <span class="wine-row__comment-marker" aria-hidden="true">✦</span>
+      <span class="wine-row__comment-label">Note</span>
+      <p class="wine-row__comment-text">${escapeHtml(spirit.comment)}</p>
+    </aside>
+  `;
+}
+
+function renderSpiritRow(spirit: Spirit): string {
+  const vintage = formatVintage(spirit.vintage);
+  const stock = formatStockLine(spirit.stock, spirit.volume);
+  const details = buildSpiritDetails(spirit);
+
+  const vintageHtml = vintage
+    ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
+    : '';
+
+  const labelHtml = spirit.label
+    ? `<em class="wine-row__cuvee">${escapeHtml(spirit.label)}</em>`
+    : '';
+
+  const stockHtml = stock
+    ? `<span class="wine-row__stock">${escapeHtml(stock)}</span>`
+    : '';
+
+  const commentHtml = renderSpiritComment(spirit);
+
+  const detailsHtml =
+    details.length > 0
+      ? `<dl class="wine-row__details">${details.map(renderDetail).join('')}</dl>`
+      : '';
+
+  return `
+    <article class="wine-row">
+      <div class="wine-row__header">
+        <div class="wine-row__domain">
+          <h3 class="wine-row__domain-name">${escapeHtml(spirit.distillery)}</h3>
+        </div>
+        <div class="wine-row__title">
+          ${labelHtml}
+          ${vintageHtml}
+        </div>
+        <div class="wine-row__commerce">
+          ${stockHtml}
+          <span class="wine-row__price${isPriceOnRequest(spirit.price) ? ' wine-row__price--on-request' : ''}">${escapeHtml(formatPrice(spirit.price))}</span>
+        </div>
+      </div>
+      ${commentHtml}
+      ${detailsHtml}
+    </article>
+  `;
+}
+
+function renderSpiritCategorySection(group: SpiritCategoryGroup): string {
+  const spirits = group.spirits.map(renderSpiritRow).join('');
+
+  return `
+    <section class="region-section">
+      <header class="region-section__header">
+        <h3 class="region-section__title">${escapeHtml(formatRegionName(group.category))}</h3>
+        <span class="region-section__count">${escapeHtml(formatSpiritCategoryCount(group.spirits.length))}</span>
+      </header>
+      <div class="region-section__wines">
+        ${spirits}
+      </div>
+    </section>
+  `;
+}
+
+function isSpiritueuxType(alcoholType: string): boolean {
+  return (
+    alcoholType
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '') === 'spiritueux'
+  );
+}
+
+function renderSpiritTypeSection(group: SpiritTypeGroup): string {
+  const categories = group.categories.map(renderSpiritCategorySection).join('');
+
+  // Avoid "Spiritueux" under the catalog part title "Spiritueux"
+  if (isSpiritueuxType(group.alcoholType)) {
+    return `
+      <section class="country-section country-section--flat">
+        <div class="country-section__regions">
+          ${categories}
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="country-section">
+      <header class="country-section__header">
+        <h2 class="country-section__title">${escapeHtml(formatRegionName(group.alcoholType))}</h2>
+        <span class="country-section__count">${escapeHtml(formatSpiritTypeCount(group.categories.length))}</span>
+      </header>
+      <div class="country-section__regions">
+        ${categories}
+      </div>
+    </section>
+  `;
+}
+
+export function renderSpiritsCatalog(types: SpiritTypeGroup[], emptyMessage?: string): string {
+  if (types.length === 0) {
+    if (!emptyMessage) return '';
+    return `<p class="catalog-message">${escapeHtml(emptyMessage)}</p>`;
+  }
+
+  return types.map(renderSpiritTypeSection).join('');
+}
+
+export function renderCatalogParts(options: {
+  winesHtml: string;
+  spiritsHtml: string;
+  showWinesHeading: boolean;
+  showSpiritsHeading: boolean;
+  emptyMessage?: string;
+}): string {
+  const { winesHtml, spiritsHtml, showWinesHeading, showSpiritsHeading, emptyMessage } = options;
+  const hasWines = winesHtml.trim().length > 0;
+  const hasSpirits = spiritsHtml.trim().length > 0;
+
+  if (!hasWines && !hasSpirits) {
+    return `<p class="catalog-message">${escapeHtml(
+      emptyMessage ?? 'Aucune référence disponible pour le moment.',
+    )}</p>`;
+  }
+
+  const parts: string[] = [];
+
+  if (hasWines) {
+    if (showWinesHeading) {
+      parts.push(`
+        <header class="catalog-part-header">
+          <p class="catalog-part-header__title">Vins</p>
+        </header>
+      `);
+    }
+    parts.push(`<div class="catalog-part">${winesHtml}</div>`);
+  }
+
+  if (hasSpirits) {
+    if (showSpiritsHeading) {
+      parts.push(`
+        <header class="catalog-part-header${hasWines ? ' catalog-part-header--spaced' : ''}">
+          <p class="catalog-part-header__title">Spiritueux</p>
+        </header>
+      `);
+    }
+    parts.push(`<div class="catalog-part">${spiritsHtml}</div>`);
+  }
+
+  return parts.join('');
 }
 
 export function renderLoading(): string {
