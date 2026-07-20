@@ -107,7 +107,7 @@ const SPIRIT_COLUMN_ALIASES: SpiritColumnAliases = {
   stock: ['qté', 'qte', 'stock', 'bouteilles', 'btl', 'quantité', 'quantite'],
 };
 
-const DEFAULT_SPIRITS_SHEET = 'Feuille 3';
+const DEFAULT_SPIRITS_GID = '337014678';
 
 function normalizeHeader(header: string): string {
   return header
@@ -154,10 +154,23 @@ function parseNumber(value: string | number | null): number | null {
   if (typeof value === 'number') return value;
   const trimmed = value.trim();
   if (trimmed === '/' || trimmed === '-') return null;
-  const cleaned = trimmed.replace(/[^\d,.-]/g, '').replace(',', '.');
+  let cleaned = trimmed.replace(/[^\d,.-]/g, '');
   if (!cleaned) return null;
+  if (cleaned.includes(',') && cleaned.includes('.')) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  } else {
+    cleaned = cleaned.replace(',', '.');
+  }
   const parsed = Number.parseFloat(cleaned);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+/** Alcohol %: prefer formatted cell text; treat (0, 1) as a Sheets percent fraction. */
+function parseAbv(value: string | number | null): number | null {
+  const parsed = parseNumber(value);
+  if (parsed === null) return null;
+  if (parsed > 0 && parsed < 1) return parsed * 100;
+  return parsed;
 }
 
 function parseVintage(value: string | number | null): string | null {
@@ -290,7 +303,7 @@ function parseRows(
 }
 
 function parseSpiritRows(
-  rows: GvizRow[],
+  rows: string[][],
   columnMap: Record<keyof SpiritColumnAliases, number>,
 ): Spirit[] {
   let currentAlcoholType = '';
@@ -298,57 +311,131 @@ function parseSpiritRows(
   const spirits: Spirit[] = [];
 
   for (const row of rows) {
-    const alcoholTypeValue = getRowValue(row, columnMap.alcoholType);
-    const categoryValue = getRowValue(row, columnMap.category);
-    const distilleryValue = getRowValue(row, columnMap.distillery);
-    const labelValue = getRowValue(row, columnMap.label);
+    const alcoholTypeValue = getCsvValue(row, columnMap.alcoholType);
+    const categoryValue = getCsvValue(row, columnMap.category);
+    const distilleryValue = getCsvValue(row, columnMap.distillery);
+    const labelValue = getCsvValue(row, columnMap.label);
 
-    const hasAlcoholTypeOnRow =
-      alcoholTypeValue !== null && String(alcoholTypeValue).trim() !== '';
-    const hasCategoryOnRow = categoryValue !== null && String(categoryValue).trim() !== '';
-    const hasDistilleryOnRow =
-      distilleryValue !== null && String(distilleryValue).trim() !== '';
-    const hasLabelOnRow = labelValue !== null && String(labelValue).trim() !== '';
+    const hasAlcoholTypeOnRow = Boolean(alcoholTypeValue);
+    const hasCategoryOnRow = Boolean(categoryValue);
+    const hasDistilleryOnRow = Boolean(distilleryValue);
+    const hasLabelOnRow = Boolean(labelValue);
 
     if (hasAlcoholTypeOnRow) {
-      const newType = String(alcoholTypeValue).trim();
-      if (newType !== currentAlcoholType) {
-        currentAlcoholType = newType;
+      if (alcoholTypeValue !== currentAlcoholType) {
+        currentAlcoholType = alcoholTypeValue;
         currentCategory = '';
       }
     }
 
     if (hasCategoryOnRow) {
-      currentCategory = String(categoryValue).trim();
+      currentCategory = categoryValue;
     }
 
     if (!currentAlcoholType || !currentCategory) continue;
     if (!hasDistilleryOnRow && !hasLabelOnRow) continue;
 
-    const distillery = hasDistilleryOnRow ? String(distilleryValue).trim() : '';
-    const label = hasLabelOnRow ? String(labelValue).trim() : '';
+    const distillery = distilleryValue;
+    const label = labelValue;
     if (!distillery && !label) continue;
 
     spirits.push({
       alcoholType: currentAlcoholType,
       category: currentCategory,
-      origin: parseText(getRowValue(row, columnMap.origin)),
+      origin: parseText(getCsvValue(row, columnMap.origin)),
       distillery,
       label,
-      abv: parseNumber(getRowValue(row, columnMap.abv)),
-      volume: parseNumber(getRowValue(row, columnMap.volume)),
-      rawMaterial: parseText(getRowValue(row, columnMap.rawMaterial)),
-      aging: parseText(getRowValue(row, columnMap.aging)),
-      ppm: parseText(getRowValue(row, columnMap.ppm)),
-      foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
-      vintage: parseVintage(getRowValue(row, columnMap.vintage)),
-      price: parseNumber(getRowValue(row, columnMap.price)),
-      comment: parseText(getRowValue(row, columnMap.comment)),
-      stock: parseNumber(getRowValue(row, columnMap.stock)),
+      abv: parseAbv(getCsvValue(row, columnMap.abv)),
+      volume: parseNumber(getCsvValue(row, columnMap.volume)),
+      rawMaterial: parseText(getCsvValue(row, columnMap.rawMaterial)),
+      aging: parseText(getCsvValue(row, columnMap.aging)),
+      ppm: parseText(getCsvValue(row, columnMap.ppm)),
+      foodPairing: parseText(getCsvValue(row, columnMap.foodPairing)),
+      vintage: parseVintage(getCsvValue(row, columnMap.vintage)),
+      price: parseNumber(getCsvValue(row, columnMap.price)),
+      comment: parseText(getCsvValue(row, columnMap.comment)),
+      stock: parseNumber(getCsvValue(row, columnMap.stock)),
     });
   }
 
   return spirits;
+}
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && next === '"') {
+        field += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      row.push(field);
+      field = '';
+    } else if (char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (char === '\r') {
+      // ignore CR (handle CRLF)
+    } else {
+      field += char;
+    }
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function getCsvValue(row: string[], index: number): string {
+  if (index === -1 || index >= row.length) return '';
+  return row[index]?.trim() ?? '';
+}
+
+async function fetchCsvSheet(
+  sheetId: string,
+  gid: string,
+): Promise<{ headers: string[]; rows: string[][] }> {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Impossible de charger le catalogue spiritueux.');
+  }
+
+  const text = await response.text();
+  if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+    throw new Error('Impossible de charger le catalogue spiritueux.');
+  }
+
+  const matrix = parseCsv(text).filter((row) => row.some((cell) => cell.trim() !== ''));
+  if (matrix.length === 0) {
+    throw new Error('Feuille spiritueux vide.');
+  }
+
+  const [headerRow, ...dataRows] = matrix;
+  return { headers: headerRow, rows: dataRows };
 }
 
 export function groupWinesByCountryAndRegion(wines: Wine[]): CountryGroup[] {
@@ -477,14 +564,13 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
 
 export async function fetchSpiritsCatalog(
   sheetId: string,
-  sheetName = DEFAULT_SPIRITS_SHEET,
+  gid = DEFAULT_SPIRITS_GID,
 ): Promise<SpiritsCatalogData> {
   if (!sheetId) {
     throw new Error('Identifiant Google Sheet manquant.');
   }
 
-  const table = await fetchGvizTable(sheetId, sheetName);
-  const headers = table.cols.map((col) => col.label);
+  const { headers, rows } = await fetchCsvSheet(sheetId, gid);
 
   const columnMap = {
     alcoholType: findColumnIndex(headers, SPIRIT_COLUMN_ALIASES.alcoholType),
@@ -515,7 +601,7 @@ export async function fetchSpiritsCatalog(
     );
   }
 
-  const spirits = parseSpiritRows(table.rows, columnMap);
+  const spirits = parseSpiritRows(rows, columnMap);
   const types = groupSpiritsByTypeAndCategory(spirits);
 
   return {

@@ -139,9 +139,12 @@ export function formatSpiritCategoryCount(count: number): string {
 }
 
 export function formatAbv(abv: number | null): string | null {
-  if (abv === null) return null;
-  const rounded = Number.isInteger(abv) ? abv : Math.round(abv * 10) / 10;
-  return `${rounded}°`;
+  if (abv === null || Number.isNaN(abv)) return null;
+  const rounded = Math.round(abv * 100) / 100;
+  const formatted = Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
+  return `${formatted}°`;
 }
 
 export function formatPpm(ppm: string): string | null {

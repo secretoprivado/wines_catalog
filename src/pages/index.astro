@@ -35,8 +35,8 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   import type { CatalogData, SpiritsCatalogData } from '../lib/types';
 
   const sheetId = import.meta.env.PUBLIC_GOOGLE_SHEET_ID;
-  const spiritsSheetName =
-    import.meta.env.PUBLIC_GOOGLE_SHEET_SPIRITS_TAB || 'Feuille 3';
+  const spiritsSheetGid =
+    import.meta.env.PUBLIC_GOOGLE_SHEET_SPIRITS_GID || '337014678';
   const catalogEl = document.getElementById('catalog');
   const countEl = document.getElementById('reference-count');
   const filtersEl = document.getElementById('catalog-filters');
@@ -234,7 +234,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     try {
       const [wines, spirits] = await Promise.all([
         fetchCatalog(sheetId),
-        fetchSpiritsCatalog(sheetId, spiritsSheetName).catch(() => null),
+        fetchSpiritsCatalog(sheetId, spiritsSheetGid).catch(() => null),
       ]);
 
       catalogData = wines;
