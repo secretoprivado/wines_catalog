@@ -130,10 +130,6 @@ export function formatRegionCount(count: number): string {
   return `${count} CUVÉE${count > 1 ? 'S' : ''}`;
 }
 
-export function formatSpiritTypeCount(count: number): string {
-  return `${count} CATÉGORIE${count > 1 ? 'S' : ''}`;
-}
-
 export function formatSpiritCategoryCount(count: number): string {
   return `${count} RÉFÉRENCE${count > 1 ? 'S' : ''}`;
 }

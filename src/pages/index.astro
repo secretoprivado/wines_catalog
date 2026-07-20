@@ -19,9 +19,13 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     applyFilters,
     applySpiritFilters,
     buildFilterOptions,
+    CATALOG_SECTION_WINES,
+    countSectionTotal,
     EMPTY_FILTERS,
     hasActiveFilters,
+    isWinesSection,
     type CatalogFilters,
+    type CatalogSectionOption,
     type RegionGroupOption,
   } from '../lib/filters';
   import { formatCountryName, formatReferenceCount, formatRegionName } from '../lib/format';
@@ -44,9 +48,13 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const panelEl = document.getElementById('filter-panel');
   const badgeEl = document.getElementById('filter-active-badge');
   const searchEl = document.getElementById('filter-search') as HTMLInputElement | null;
+  const catalogSectionEl = document.getElementById('filter-catalog') as HTMLSelectElement | null;
+  const countryFieldEl = document.getElementById('filter-country-field');
+  const regionFieldEl = document.getElementById('filter-region-field');
   const countryEl = document.getElementById('filter-country') as HTMLSelectElement | null;
   const regionEl = document.getElementById('filter-region') as HTMLSelectElement | null;
   const typeEl = document.getElementById('filter-type') as HTMLSelectElement | null;
+  const typeLabelEl = document.getElementById('filter-type-label');
   const inStockEl = document.getElementById('filter-in-stock') as HTMLInputElement | null;
   const resetEl = document.getElementById('filter-reset') as HTMLButtonElement | null;
   const statusEl = document.getElementById('filter-status');
@@ -57,6 +65,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
 
   function readFilters(): CatalogFilters {
     return {
+      catalogSection: catalogSectionEl?.value || CATALOG_SECTION_WINES,
       search: searchEl?.value ?? '',
       country: countryEl?.value ?? '',
       region: regionEl?.value ?? '',
@@ -88,6 +97,24 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     }
 
     select.value = options.includes(current) ? current : '';
+  }
+
+  function populateCatalogSelect(
+    select: HTMLSelectElement,
+    options: CatalogSectionOption[],
+    selected: string,
+  ) {
+    select.innerHTML = '';
+
+    for (const option of options) {
+      const item = document.createElement('option');
+      item.value = option.value;
+      item.textContent = option.label;
+      select.appendChild(item);
+    }
+
+    const values = options.map((option) => option.value);
+    select.value = values.includes(selected) ? selected : CATALOG_SECTION_WINES;
   }
 
   function populateRegionSelect(
@@ -128,14 +155,41 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     select.value = allRegions.includes(selected) ? selected : '';
   }
 
+  function updateSectionFields(showingWines: boolean) {
+    if (countryFieldEl) countryFieldEl.hidden = !showingWines;
+    if (regionFieldEl) regionFieldEl.hidden = !showingWines;
+    if (typeLabelEl) typeLabelEl.textContent = showingWines ? 'Type' : 'Catégorie';
+    if (searchEl) {
+      searchEl.placeholder = showingWines
+        ? 'Domaine, cuvée, cépage, appellation…'
+        : 'Distillerie, étiquette, origine…';
+    }
+  }
+
   function updateFilterOptions() {
-    if (!catalogData || !countryEl || !regionEl || !typeEl) return;
+    if (!catalogData || !catalogSectionEl || !countryEl || !regionEl || !typeEl) return;
 
     const spirits = spiritsData?.spirits ?? [];
     const options = buildFilterOptions(catalogData.wines, spirits, filters);
-    populateSelect(countryEl, options.countries, 'Tous les pays', filters.country, formatCountryName);
-    populateRegionSelect(regionEl, options.regionsByCountry, 'Toutes les régions', filters.region);
-    populateSelect(typeEl, options.types, 'Tous les types', filters.type);
+    const showingWines = isWinesSection(filters);
+
+    populateCatalogSelect(catalogSectionEl, options.catalogSections, filters.catalogSection);
+    updateSectionFields(showingWines);
+
+    if (showingWines) {
+      populateSelect(countryEl, options.countries, 'Tous les pays', filters.country, formatCountryName);
+      populateRegionSelect(regionEl, options.regionsByCountry, 'Toutes les régions', filters.region);
+    } else {
+      countryEl.value = '';
+      regionEl.value = '';
+    }
+
+    populateSelect(
+      typeEl,
+      options.types,
+      showingWines ? 'Tous les types' : 'Toutes les catégories',
+      filters.type,
+    );
   }
 
   function updateCatalog() {
@@ -145,8 +199,9 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     updateFilterOptions();
     filters = readFilters();
 
+    const spirits = spiritsData?.spirits ?? [];
     const filteredWines = applyFilters(catalogData.wines, filters);
-    const filteredSpirits = applySpiritFilters(spiritsData?.spirits ?? [], filters);
+    const filteredSpirits = applySpiritFilters(spirits, filters);
     const countries = groupWinesByCountryAndRegion(filteredWines);
     const spiritTypes = groupSpiritsByTypeAndCategory(filteredSpirits);
 
@@ -156,22 +211,19 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       ? 'Aucune référence ne correspond à vos critères.'
       : undefined;
 
-    const hasWines = filteredWines.length > 0;
-    const hasSpirits = filteredSpirits.length > 0;
-
     catalogEl.innerHTML = renderCatalogParts({
       winesHtml,
       spiritsHtml,
-      showWinesHeading: hasWines && hasSpirits,
-      showSpiritsHeading: hasSpirits,
+      showWinesHeading: false,
+      showSpiritsHeading: false,
       emptyMessage,
     });
 
     const filteredTotal = filteredWines.length + filteredSpirits.length;
-    const totalCount = catalogData.totalCount + (spiritsData?.totalCount ?? 0);
+    const sectionTotal = countSectionTotal(catalogData.wines, spirits, filters.catalogSection);
 
     if (countEl) {
-      countEl.textContent = formatReferenceCount(filteredTotal, totalCount);
+      countEl.textContent = formatReferenceCount(filteredTotal, sectionTotal);
     }
 
     if (statusEl) {
@@ -206,6 +258,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   }
 
   function resetFilters() {
+    if (catalogSectionEl) catalogSectionEl.value = CATALOG_SECTION_WINES;
     if (searchEl) searchEl.value = '';
     if (countryEl) countryEl.value = '';
     if (regionEl) regionEl.value = '';
@@ -218,6 +271,12 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   function bindFilterEvents() {
     toggleEl?.addEventListener('click', toggleFilterPanel);
     searchEl?.addEventListener('input', updateCatalog);
+    catalogSectionEl?.addEventListener('change', () => {
+      if (countryEl) countryEl.value = '';
+      if (regionEl) regionEl.value = '';
+      if (typeEl) typeEl.value = '';
+      updateCatalog();
+    });
     countryEl?.addEventListener('change', () => {
       if (regionEl) regionEl.value = '';
       updateCatalog();

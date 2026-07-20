@@ -35,13 +35,20 @@
 
     <div class="catalog-filters__controls">
       <div class="catalog-filters__field">
+        <label class="catalog-filters__label" for="filter-catalog">Catalogue</label>
+        <select class="catalog-filters__select" id="filter-catalog" name="catalog">
+          <option value="vins">Vins</option>
+        </select>
+      </div>
+
+      <div class="catalog-filters__field" id="filter-country-field">
         <label class="catalog-filters__label" for="filter-country">Pays</label>
         <select class="catalog-filters__select" id="filter-country" name="country">
           <option value="">Tous les pays</option>
         </select>
       </div>
 
-      <div class="catalog-filters__field">
+      <div class="catalog-filters__field" id="filter-region-field">
         <label class="catalog-filters__label" for="filter-region">Région</label>
         <select class="catalog-filters__select" id="filter-region" name="region">
           <option value="">Toutes les régions</option>
@@ -49,7 +56,7 @@
       </div>
 
       <div class="catalog-filters__field">
-        <label class="catalog-filters__label" for="filter-type">Type</label>
+        <label class="catalog-filters__label" for="filter-type" id="filter-type-label">Type</label>
         <select class="catalog-filters__select" id="filter-type" name="type">
           <option value="">Tous les types</option>
         </select>

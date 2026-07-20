@@ -21,7 +21,6 @@ import {
   formatRegionName,
   formatScore,
   formatSpiritCategoryCount,
-  formatSpiritTypeCount,
   formatStockLine,
   formatType,
   formatVintage,
@@ -344,36 +343,12 @@ function renderSpiritCategorySection(group: SpiritCategoryGroup): string {
   `;
 }
 
-function isSpiritueuxType(alcoholType: string): boolean {
-  return (
-    alcoholType
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '') === 'spiritueux'
-  );
-}
-
 function renderSpiritTypeSection(group: SpiritTypeGroup): string {
   const categories = group.categories.map(renderSpiritCategorySection).join('');
 
-  // Avoid "Spiritueux" under the catalog part title "Spiritueux"
-  if (isSpiritueuxType(group.alcoholType)) {
-    return `
-      <section class="country-section country-section--flat">
-        <div class="country-section__regions">
-          ${categories}
-        </div>
-      </section>
-    `;
-  }
-
+  // Categories only — the catalog section filter already names Spiritueux / Vins mutés
   return `
-    <section class="country-section">
-      <header class="country-section__header">
-        <h2 class="country-section__title">${escapeHtml(formatRegionName(group.alcoholType))}</h2>
-        <span class="country-section__count">${escapeHtml(formatSpiritTypeCount(group.categories.length))}</span>
-      </header>
+    <section class="country-section country-section--flat">
       <div class="country-section__regions">
         ${categories}
       </div>
