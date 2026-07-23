@@ -2,6 +2,7 @@ import { formatCountryName, formatRegionName } from './format';
 import type { Spirit, Wine } from './types';
 
 export const CATALOG_SECTION_WINES = 'vins';
+export const CATALOG_SECTION_SPIRITS = 'spiritueux';
 
 export interface CatalogFilters {
   catalogSection: string;
@@ -60,6 +61,10 @@ function compareRegions(a: string, b: string): number {
 
 export function isWinesSection(filters: CatalogFilters): boolean {
   return filters.catalogSection === CATALOG_SECTION_WINES;
+}
+
+export function isSpiritsSection(filters: CatalogFilters): boolean {
+  return filters.catalogSection === CATALOG_SECTION_SPIRITS;
 }
 
 function buildRegionsByCountry(wines: Wine[], countryFilter: string): RegionGroupOption[] {
@@ -123,7 +128,6 @@ function spiritSearchBlob(spirit: Spirit): string {
 
 export function hasActiveFilters(filters: CatalogFilters): boolean {
   return (
-    !isWinesSection(filters) ||
     filters.search.trim() !== '' ||
     filters.country !== '' ||
     filters.region !== '' ||
@@ -132,17 +136,10 @@ export function hasActiveFilters(filters: CatalogFilters): boolean {
   );
 }
 
-export function buildCatalogSections(spirits: Spirit[]): CatalogSectionOption[] {
-  const alcoholTypes = [
-    ...new Set(spirits.map((spirit) => spirit.alcoholType).filter(Boolean)),
-  ].sort((a, b) => a.localeCompare(b, 'fr'));
-
+export function buildCatalogSections(): CatalogSectionOption[] {
   return [
     { value: CATALOG_SECTION_WINES, label: 'Vins' },
-    ...alcoholTypes.map((alcoholType) => ({
-      value: alcoholType,
-      label: formatRegionName(alcoholType),
-    })),
+    { value: CATALOG_SECTION_SPIRITS, label: 'Spiritueux' },
   ];
 }
 
@@ -159,10 +156,8 @@ function buildTypes(wines: Wine[], spirits: Spirit[], filters: CatalogFilters): 
     );
   }
 
-  const categories = spirits
-    .filter((spirit) => spirit.alcoholType === filters.catalogSection)
-    .map((spirit) => spirit.category)
-    .filter(Boolean);
+  // Spiritueux tab includes all spirits sheet entries (spiritueux + vins mutés)
+  const categories = spirits.map((spirit) => spirit.category).filter(Boolean);
 
   return [...new Set(categories)].sort((a, b) => a.localeCompare(b, 'fr'));
 }
@@ -172,7 +167,7 @@ export function buildFilterOptions(
   spirits: Spirit[],
   filters: CatalogFilters,
 ): FilterOptions {
-  const catalogSections = buildCatalogSections(spirits);
+  const catalogSections = buildCatalogSections();
   const countries = isWinesSection(filters)
     ? [...new Set(wines.map((wine) => wine.country).filter(Boolean))].sort(compareCountries)
     : [];
@@ -200,12 +195,11 @@ export function applyFilters(wines: Wine[], filters: CatalogFilters): Wine[] {
 }
 
 export function applySpiritFilters(spirits: Spirit[], filters: CatalogFilters): Spirit[] {
-  if (isWinesSection(filters)) return [];
+  if (!isSpiritsSection(filters)) return [];
 
   const search = normalizeText(filters.search);
 
   return spirits.filter((spirit) => {
-    if (spirit.alcoholType !== filters.catalogSection) return false;
     if (filters.type && spirit.category !== filters.type) return false;
     if (filters.inStockOnly && (spirit.stock === null || spirit.stock <= 0)) return false;
     if (search && !spiritSearchBlob(spirit).includes(search)) return false;
@@ -219,5 +213,6 @@ export function countSectionTotal(
   catalogSection: string,
 ): number {
   if (catalogSection === CATALOG_SECTION_WINES) return wines.length;
-  return spirits.filter((spirit) => spirit.alcoholType === catalogSection).length;
+  if (catalogSection === CATALOG_SECTION_SPIRITS) return spirits.length;
+  return 0;
 }

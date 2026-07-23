@@ -1,12 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CatalogHeader from '../components/CatalogHeader.astro';
+import CatalogTabs from '../components/CatalogTabs.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
 ---
 
 <Layout>
   <main class="page__inner">
     <CatalogHeader />
+    <CatalogTabs />
     <CatalogFilters />
     <div id="catalog" class="catalog" aria-live="polite">
       <p class="catalog-message catalog-message--loading">Chargement du catalogue…</p>
@@ -19,6 +21,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     applyFilters,
     applySpiritFilters,
     buildFilterOptions,
+    CATALOG_SECTION_SPIRITS,
     CATALOG_SECTION_WINES,
     countSectionTotal,
     EMPTY_FILTERS,
@@ -43,6 +46,10 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     import.meta.env.PUBLIC_GOOGLE_SHEET_SPIRITS_GID || '337014678';
   const catalogEl = document.getElementById('catalog');
   const countEl = document.getElementById('reference-count');
+  const tabsEl = document.getElementById('catalog-tabs');
+  const tabButtons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('.catalog-tabs__tab'),
+  );
   const filtersEl = document.getElementById('catalog-filters');
   const toggleEl = document.getElementById('filter-toggle') as HTMLButtonElement | null;
   const panelEl = document.getElementById('filter-panel');
@@ -166,6 +173,31 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     }
   }
 
+  function syncCatalogTabs(section: string) {
+    for (const tab of tabButtons) {
+      const isActive = tab.dataset.catalog === section;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', String(isActive));
+      tab.tabIndex = isActive ? 0 : -1;
+    }
+  }
+
+  function setCatalogSection(section: string, { resetSubFilters = true } = {}) {
+    const next =
+      section === CATALOG_SECTION_SPIRITS ? CATALOG_SECTION_SPIRITS : CATALOG_SECTION_WINES;
+
+    if (catalogSectionEl) catalogSectionEl.value = next;
+    syncCatalogTabs(next);
+
+    if (resetSubFilters) {
+      if (countryEl) countryEl.value = '';
+      if (regionEl) regionEl.value = '';
+      if (typeEl) typeEl.value = '';
+    }
+
+    updateCatalog();
+  }
+
   function updateFilterOptions() {
     if (!catalogData || !catalogSectionEl || !countryEl || !regionEl || !typeEl) return;
 
@@ -174,6 +206,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     const showingWines = isWinesSection(filters);
 
     populateCatalogSelect(catalogSectionEl, options.catalogSections, filters.catalogSection);
+    syncCatalogTabs(filters.catalogSection);
     updateSectionFields(showingWines);
 
     if (showingWines) {
@@ -258,24 +291,32 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   }
 
   function resetFilters() {
-    if (catalogSectionEl) catalogSectionEl.value = CATALOG_SECTION_WINES;
+    const currentSection = catalogSectionEl?.value || CATALOG_SECTION_WINES;
     if (searchEl) searchEl.value = '';
     if (countryEl) countryEl.value = '';
     if (regionEl) regionEl.value = '';
     if (typeEl) typeEl.value = '';
     if (inStockEl) inStockEl.checked = false;
-    filters = { ...EMPTY_FILTERS };
+    filters = { ...EMPTY_FILTERS, catalogSection: currentSection };
+    if (catalogSectionEl) catalogSectionEl.value = currentSection;
+    syncCatalogTabs(currentSection);
     updateCatalog();
   }
 
   function bindFilterEvents() {
     toggleEl?.addEventListener('click', toggleFilterPanel);
     searchEl?.addEventListener('input', updateCatalog);
+
+    for (const tab of tabButtons) {
+      tab.addEventListener('click', () => {
+        const section = tab.dataset.catalog || CATALOG_SECTION_WINES;
+        if (section === (catalogSectionEl?.value || CATALOG_SECTION_WINES)) return;
+        setCatalogSection(section);
+      });
+    }
+
     catalogSectionEl?.addEventListener('change', () => {
-      if (countryEl) countryEl.value = '';
-      if (regionEl) regionEl.value = '';
-      if (typeEl) typeEl.value = '';
-      updateCatalog();
+      setCatalogSection(catalogSectionEl.value);
     });
     countryEl?.addEventListener('change', () => {
       if (regionEl) regionEl.value = '';
@@ -299,8 +340,10 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       catalogData = wines;
       spiritsData = spirits;
 
+      if (tabsEl) tabsEl.hidden = false;
       if (filtersEl) filtersEl.hidden = false;
       bindFilterEvents();
+      syncCatalogTabs(CATALOG_SECTION_WINES);
       updateCatalog();
     } catch (error) {
       const message =
