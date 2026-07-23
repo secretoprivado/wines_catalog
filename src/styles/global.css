@@ -627,13 +627,13 @@ img {
   color: var(--foreground);
 }
 
-.wine-row__price--on-request {
-  font-family: var(--font-sans);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: 0.02em;
-  color: var(--muted-foreground);
+.wine-row__price-dash {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.5px;
+  margin-right: 0.2em;
+  background: currentColor;
+  vertical-align: 0.3em;
 }
 
 .wine-row__details {

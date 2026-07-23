@@ -40,14 +40,9 @@ export function formatStockLine(stock: number | null, volume: number | null): st
   return stockPart ?? volumePart;
 }
 
-export function formatPrice(price: number | null): string {
-  if (price === null) return 'prix sur demande';
+export function formatPrice(price: number): string {
   const formatted = Number.isInteger(price) ? String(price) : price.toFixed(2).replace('.', ',');
   return `${formatted} €`;
-}
-
-export function isPriceOnRequest(price: number | null): boolean {
-  return price === null;
 }
 
 export function formatScore(score: number | null): string | null {
@@ -59,7 +54,7 @@ export function formatScore(score: number | null): string | null {
 export function formatMichelinScore(score: number | null): string | null {
   if (score === null || Number.isNaN(score)) return null;
   const rounded = Number.isInteger(score) ? score : Math.round(score);
-  return rounded <= 1 ? `${rounded} grappe` : `${rounded} grappes`;
+  return rounded <= 1 ? `${rounded} Grappe` : `${rounded} Grappes`;
 }
 
 export function formatVintage(vintage: string | null): string | null {
