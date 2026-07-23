@@ -25,6 +25,8 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     CATALOG_SECTION_WINES,
     countSectionTotal,
     EMPTY_FILTERS,
+    filtersFromSearchParams,
+    filtersToSearchParams,
     hasActiveFilters,
     isWinesSection,
     type CatalogFilters,
@@ -62,7 +64,6 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const regionEl = document.getElementById('filter-region') as HTMLSelectElement | null;
   const typeEl = document.getElementById('filter-type') as HTMLSelectElement | null;
   const typeLabelEl = document.getElementById('filter-type-label');
-  const inStockEl = document.getElementById('filter-in-stock') as HTMLInputElement | null;
   const resetEl = document.getElementById('filter-reset') as HTMLButtonElement | null;
   const statusEl = document.getElementById('filter-status');
 
@@ -77,8 +78,32 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       country: countryEl?.value ?? '',
       region: regionEl?.value ?? '',
       type: typeEl?.value ?? '',
-      inStockOnly: inStockEl?.checked ?? false,
     };
+  }
+
+  function applyFiltersToForm(next: CatalogFilters) {
+    if (searchEl) searchEl.value = next.search;
+    if (catalogSectionEl) catalogSectionEl.value = next.catalogSection;
+    if (countryEl) countryEl.value = next.country;
+    if (regionEl) regionEl.value = next.region;
+    if (typeEl) typeEl.value = next.type;
+    syncCatalogTabs(next.catalogSection);
+  }
+
+  function syncFiltersToUrl() {
+    const params = filtersToSearchParams(filters);
+    const query = params.toString();
+    const nextUrl = query ? `${location.pathname}?${query}` : location.pathname;
+    const currentUrl = `${location.pathname}${location.search}`;
+
+    if (nextUrl !== currentUrl) {
+      history.replaceState(null, '', nextUrl);
+    }
+  }
+
+  function applyFiltersFromUrl() {
+    filters = filtersFromSearchParams(new URLSearchParams(location.search));
+    applyFiltersToForm(filters);
   }
 
   function populateSelect(
@@ -228,9 +253,22 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   function updateCatalog() {
     if (!catalogData || !catalogEl) return;
 
-    filters = readFilters();
+    const fromForm = readFilters();
+    const countryReady = Boolean(countryEl && countryEl.options.length > 1);
+    const regionReady = Boolean(regionEl && regionEl.options.length > 1);
+    const typeReady = Boolean(typeEl && typeEl.options.length > 1);
+
+    filters = {
+      catalogSection: fromForm.catalogSection,
+      search: fromForm.search,
+      country: countryReady ? fromForm.country : filters.country,
+      region: regionReady ? fromForm.region : filters.region,
+      type: typeReady ? fromForm.type : filters.type,
+    };
+
     updateFilterOptions();
     filters = readFilters();
+    syncFiltersToUrl();
 
     const spirits = spiritsData?.spirits ?? [];
     const filteredWines = applyFilters(catalogData.wines, filters);
@@ -296,7 +334,6 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (countryEl) countryEl.value = '';
     if (regionEl) regionEl.value = '';
     if (typeEl) typeEl.value = '';
-    if (inStockEl) inStockEl.checked = false;
     filters = { ...EMPTY_FILTERS, catalogSection: currentSection };
     if (catalogSectionEl) catalogSectionEl.value = currentSection;
     syncCatalogTabs(currentSection);
@@ -324,8 +361,12 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     });
     regionEl?.addEventListener('change', updateCatalog);
     typeEl?.addEventListener('change', updateCatalog);
-    inStockEl?.addEventListener('change', updateCatalog);
     resetEl?.addEventListener('click', resetFilters);
+
+    window.addEventListener('popstate', () => {
+      applyFiltersFromUrl();
+      updateCatalog();
+    });
   }
 
   async function loadCatalog() {
@@ -343,7 +384,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       if (tabsEl) tabsEl.hidden = false;
       if (filtersEl) filtersEl.hidden = false;
       bindFilterEvents();
-      syncCatalogTabs(CATALOG_SECTION_WINES);
+      applyFiltersFromUrl();
       updateCatalog();
     } catch (error) {
       const message =

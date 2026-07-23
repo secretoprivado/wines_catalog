@@ -10,7 +10,6 @@ export interface CatalogFilters {
   country: string;
   region: string;
   type: string;
-  inStockOnly: boolean;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = {
@@ -19,8 +18,41 @@ export const EMPTY_FILTERS: CatalogFilters = {
   country: '',
   region: '',
   type: '',
-  inStockOnly: false,
 };
+
+function normalizeCatalogSection(value: string | null): string {
+  return value === CATALOG_SECTION_SPIRITS ? CATALOG_SECTION_SPIRITS : CATALOG_SECTION_WINES;
+}
+
+export function filtersFromSearchParams(params: URLSearchParams): CatalogFilters {
+  return {
+    catalogSection: normalizeCatalogSection(params.get('catalog')),
+    search: params.get('q') ?? '',
+    country: params.get('country') ?? '',
+    region: params.get('region') ?? '',
+    type: params.get('type') ?? '',
+  };
+}
+
+export function filtersToSearchParams(filters: CatalogFilters): URLSearchParams {
+  const params = new URLSearchParams();
+
+  params.set('catalog', normalizeCatalogSection(filters.catalogSection));
+  if (filters.search.trim()) {
+    params.set('q', filters.search.trim());
+  }
+  if (filters.country) {
+    params.set('country', filters.country);
+  }
+  if (filters.region) {
+    params.set('region', filters.region);
+  }
+  if (filters.type) {
+    params.set('type', filters.type);
+  }
+
+  return params;
+}
 
 export interface RegionGroupOption {
   country: string;
@@ -131,8 +163,7 @@ export function hasActiveFilters(filters: CatalogFilters): boolean {
     filters.search.trim() !== '' ||
     filters.country !== '' ||
     filters.region !== '' ||
-    filters.type !== '' ||
-    filters.inStockOnly
+    filters.type !== ''
   );
 }
 
@@ -188,7 +219,6 @@ export function applyFilters(wines: Wine[], filters: CatalogFilters): Wine[] {
     if (filters.country && wine.country !== filters.country) return false;
     if (filters.region && wine.region !== filters.region) return false;
     if (filters.type && wine.type !== filters.type) return false;
-    if (filters.inStockOnly && (wine.stock === null || wine.stock <= 0)) return false;
     if (search && !wineSearchBlob(wine).includes(search)) return false;
     return true;
   });
@@ -201,7 +231,6 @@ export function applySpiritFilters(spirits: Spirit[], filters: CatalogFilters): 
 
   return spirits.filter((spirit) => {
     if (filters.type && spirit.category !== filters.type) return false;
-    if (filters.inStockOnly && (spirit.stock === null || spirit.stock <= 0)) return false;
     if (search && !spiritSearchBlob(spirit).includes(search)) return false;
     return true;
   });

@@ -336,25 +336,6 @@ img {
   min-width: 0;
 }
 
-.catalog-filters__checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-height: 2.5rem;
-  font-size: 0.875rem;
-  color: var(--foreground);
-  cursor: pointer;
-  user-select: none;
-}
-
-.catalog-filters__checkbox input {
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
-  accent-color: var(--primary);
-  cursor: pointer;
-}
-
 .catalog-filters__footer {
   display: flex;
   align-items: center;
@@ -391,10 +372,6 @@ img {
 @media (max-width: 52rem) {
   .catalog-filters__controls {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .catalog-filters__checkbox {
-    grid-column: 1 / -1;
   }
 }
 
