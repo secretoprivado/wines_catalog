@@ -598,6 +598,42 @@ img {
   color: var(--accent);
 }
 
+.wine-row__cert {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--primary);
+  background: color-mix(in oklch, var(--secondary) 70%, var(--background));
+}
+
+.wine-row__cert--bio {
+  color: oklch(0.38 0.1 145);
+  background: color-mix(in oklch, oklch(0.82 0.1 145) 45%, var(--background));
+}
+
+.wine-row__cert--biodyn {
+  color: oklch(0.42 0.1 75);
+  background: color-mix(in oklch, oklch(0.84 0.1 75) 45%, var(--background));
+}
+
+.wine-row__cert--hve {
+  color: oklch(0.4 0.06 220);
+  background: color-mix(in oklch, oklch(0.84 0.05 220) 45%, var(--background));
+}
+
+.wine-row__cert--nature {
+  color: oklch(0.42 0.1 35);
+  background: color-mix(in oklch, oklch(0.84 0.08 35) 45%, var(--background));
+}
+
 .wine-row__domain-name {
   margin: 0;
   font-family: var(--font-serif);

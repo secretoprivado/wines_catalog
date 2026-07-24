@@ -10,6 +10,7 @@ import {
   formatAbv,
   formatAging,
   formatAppellation,
+  formatCertificationBadge,
   formatCountryCount,
   formatCountryName,
   formatFoodPairing,
@@ -24,6 +25,7 @@ import {
   formatStockLine,
   formatType,
   formatVintage,
+  getCertificationVariant,
   getTypeDotColor,
 } from './format';
 
@@ -163,6 +165,11 @@ function renderWineRow(wine: Wine): string {
     ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
     : '';
 
+  const cert = formatCertificationBadge(wine.certification);
+  const certHtml = cert
+    ? `<span class="wine-row__cert wine-row__cert--${getCertificationVariant(wine.certification)}" title="Certification : ${escapeHtml(cert)}">${escapeHtml(cert)}</span>`
+    : '';
+
   const cuveeHtml = wine.cuvee
     ? `<em class="wine-row__cuvee">${escapeHtml(wine.cuvee)}</em>`
     : '';
@@ -189,6 +196,7 @@ function renderWineRow(wine: Wine): string {
         <div class="wine-row__title">
           ${cuveeHtml}
           ${vintageHtml}
+          ${certHtml}
         </div>
         <div class="wine-row__commerce">
           ${stockHtml}

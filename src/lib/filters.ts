@@ -131,6 +131,7 @@ function wineSearchBlob(wine: Wine): string {
       wine.grape,
       wine.type,
       wine.foodPairing,
+      wine.certification,
       wine.comment,
     ]
       .filter(Boolean)

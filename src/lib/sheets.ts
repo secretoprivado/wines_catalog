@@ -43,6 +43,7 @@ interface ColumnAliases {
   volume: string[];
   foodPairing: string[];
   comment: string[];
+  certification: string[];
   price: string[];
 }
 
@@ -86,6 +87,7 @@ const COLUMN_ALIASES: ColumnAliases = {
   volume: ['contenant (cl)', 'contenant', 'volume', 'cl'],
   foodPairing: ['exemple de plat', 'type de plat', 'accord mets', 'accord'],
   comment: ['commentaire', 'comment', 'remarque'],
+  certification: ['certification', 'mode de culture', 'culture', 'label', 'ab', 'bio'],
   price: ['prix unitaire en', 'prix unitaire', 'prix', 'price', 'tarif'],
 };
 
@@ -295,6 +297,7 @@ function parseRows(
       volume: parseNumber(getRowValue(row, columnMap.volume)),
       foodPairing: parseText(getRowValue(row, columnMap.foodPairing)),
       comment: parseText(getRowValue(row, columnMap.comment)),
+      certification: parseText(getRowValue(row, columnMap.certification)),
       price: parseNumber(getRowValue(row, columnMap.price)),
     });
   }
@@ -545,6 +548,7 @@ export async function fetchCatalog(sheetId: string): Promise<CatalogData> {
     volume: findColumnIndex(headers, COLUMN_ALIASES.volume),
     foodPairing: findColumnIndex(headers, COLUMN_ALIASES.foodPairing),
     comment: findColumnIndex(headers, COLUMN_ALIASES.comment),
+    certification: findColumnIndex(headers, COLUMN_ALIASES.certification),
     price: findColumnIndex(headers, COLUMN_ALIASES.price),
   };
 

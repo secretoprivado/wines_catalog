@@ -15,6 +15,7 @@ export interface Wine {
   volume: number | null;
   foodPairing: string;
   comment: string;
+  certification: string;
   price: number | null;
 }
 

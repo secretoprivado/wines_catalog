@@ -98,6 +98,54 @@ export function formatFoodPairing(foodPairing: string): string {
   return foodPairing.trim();
 }
 
+type CertificationKind = 'bio' | 'biodyn' | 'hve' | 'nature' | 'conventionnel';
+
+const CERTIFICATION_BADGES: Record<Exclude<CertificationKind, 'conventionnel'>, string> = {
+  bio: 'Bio',
+  biodyn: 'Biodynamie',
+  hve: 'HVE',
+  nature: 'Nature',
+};
+
+function normalizeCertificationKey(value: string): string {
+  return value.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+}
+
+export function normalizeCertification(value: string): CertificationKind | null {
+  const key = normalizeCertificationKey(value);
+  if (!key) return null;
+
+  if (key === 'bio' || key === 'ab' || key.includes('agriculture biologique')) {
+    return 'bio';
+  }
+  if (key.includes('biodyn') || key.includes('biodynam')) {
+    return 'biodyn';
+  }
+  if (key === 'hve' || key.includes('haute valeur')) {
+    return 'hve';
+  }
+  if (key.includes('nature') || key === 'naturel') {
+    return 'nature';
+  }
+  if (key.includes('convention') || key === 'classique' || key === 'conv' || key === 'conv.') {
+    return 'conventionnel';
+  }
+
+  return null;
+}
+
+export function formatCertificationBadge(value: string): string | null {
+  const kind = normalizeCertification(value);
+  if (!kind || kind === 'conventionnel') return null;
+  return CERTIFICATION_BADGES[kind];
+}
+
+export function getCertificationVariant(value: string): string {
+  const kind = normalizeCertification(value);
+  if (kind && kind !== 'conventionnel') return kind;
+  return 'default';
+}
+
 export function formatPlaceName(name: string): string {
   return name
     .trim()
