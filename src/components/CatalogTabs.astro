@@ -1,29 +1,48 @@
 ---
+interface Props {
+  page?: 'catalog' | 'about';
+}
+
+const { page = 'catalog' } = Astro.props;
+const base = import.meta.env.BASE_URL;
 ---
 
-<nav class="catalog-tabs" id="catalog-tabs" aria-label="Catalogue" hidden>
-  <div class="catalog-tabs__list" role="tablist">
-    <button
-      type="button"
-      class="catalog-tabs__tab is-active"
-      role="tab"
-      id="tab-vins"
-      data-catalog="vins"
-      aria-selected="true"
-      aria-controls="catalog"
-    >
-      Vins
-    </button>
-    <button
-      type="button"
-      class="catalog-tabs__tab"
-      role="tab"
-      id="tab-spiritueux"
-      data-catalog="spiritueux"
-      aria-selected="false"
-      aria-controls="catalog"
-    >
-      Spiritueux
-    </button>
+<nav class="catalog-tabs" id="catalog-tabs" aria-label="Catalogue">
+  <div class="catalog-tabs__list" role={page === 'catalog' ? 'tablist' : undefined}>
+    {page === 'catalog' ? (
+      <>
+        <button
+          type="button"
+          class="catalog-tabs__tab is-active"
+          role="tab"
+          id="tab-vins"
+          data-catalog="vins"
+          aria-selected="true"
+          aria-controls="catalog"
+        >
+          Vins
+        </button>
+        <button
+          type="button"
+          class="catalog-tabs__tab"
+          role="tab"
+          id="tab-spiritueux"
+          data-catalog="spiritueux"
+          aria-selected="false"
+          aria-controls="catalog"
+        >
+          Spiritueux
+        </button>
+        <a class="catalog-tabs__tab" href={`${base}a-propos/`}>À propos</a>
+      </>
+    ) : (
+      <>
+        <a class="catalog-tabs__tab" href={`${base}?catalog=vins`}>Vins</a>
+        <a class="catalog-tabs__tab" href={`${base}?catalog=spiritueux`}>Spiritueux</a>
+        <a class="catalog-tabs__tab is-active" href={`${base}a-propos/`} aria-current="page">
+          À propos
+        </a>
+      </>
+    )}
   </div>
 </nav>

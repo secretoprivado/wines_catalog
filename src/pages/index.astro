@@ -50,7 +50,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const countEl = document.getElementById('reference-count');
   const tabsEl = document.getElementById('catalog-tabs');
   const tabButtons = Array.from(
-    document.querySelectorAll<HTMLButtonElement>('.catalog-tabs__tab'),
+    document.querySelectorAll<HTMLButtonElement>('.catalog-tabs__tab[data-catalog]'),
   );
   const filtersEl = document.getElementById('catalog-filters');
   const toggleEl = document.getElementById('filter-toggle') as HTMLButtonElement | null;

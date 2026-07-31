@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CatalogHeader from '../components/CatalogHeader.astro';
+import CatalogTabs from '../components/CatalogTabs.astro';
+
+const grapesSrc = `${import.meta.env.BASE_URL}images/grapes.webp`;
+---
+
+<Layout title="À propos — La Cave Secretoprivado">
+  <main class="page__inner">
+    <CatalogHeader showReferenceCount={false} />
+    <CatalogTabs page="about" />
+    <figure class="about-page__figure">
+      <img
+        class="about-page__hero"
+        src={grapesSrc}
+        alt="Grappes de raisin mûres"
+        width="1600"
+        height="900"
+      />
+    </figure>
+    <div class="about-page__content">
+      <section class="about-page__section">
+        <h2 class="about-page__heading">Sur le terrain</h2>
+        <p>
+          Sommelier-caviste, ayant suivi les formations WSET 2 et WSET 3, j’ai choisi de construire mon
+          parcours avant tout sur le terrain, au plus près de celles et ceux qui font le vin. J’aime aller
+          à la rencontre de celles et ceux qui donnent naissance au vin. Que ce soit en France, en Espagne,
+          au Chili, en Argentine ou ailleurs, chaque rencontre nourrit ma compréhension du vin, enrichit
+          mon regard et façonne ma manière de sélectionner les domaines que je souhaite représenter.
+        </p>
+      </section>
+      <section class="about-page__section">
+        <h2 class="about-page__heading">Ma philosophie</h2>
+        <p>
+          Ma philosophie est simple : un grand vin n’est pas forcément le plus rare, le plus prestigieux
+          ou le plus cher. C’est un vin qui raconte une histoire, exprime avec sincérité son terroir et la
+          vision de celles et ceux qui l’ont élaboré. C’est un vin qui fait naître une émotion, qui
+          rassemble autour d’une table et qui laisse un souvenir bien après que le verre soit vide. Pour
+          moi, la véritable grandeur d’un vin se mesure autant à sa capacité à émouvoir qu’à sa qualité.
+        </p>
+      </section>
+      <section class="about-page__section">
+        <h2 class="about-page__heading">Ce catalogue</h2>
+        <p>
+          Ce catalogue est le fruit de mes dégustations, de mes voyages et de mes rencontres. Chaque
+          domaine y figure parce qu’il m’a touché, surpris ou profondément ému, et parce que je suis
+          convaincu qu’il mérite d’être découvert, compris et partagé.
+        </p>
+      </section>
+    </div>
+  </main>
+</Layout>

@@ -1,4 +1,9 @@
 ---
+interface Props {
+  showReferenceCount?: boolean;
+}
+
+const { showReferenceCount = true } = Astro.props;
 ---
 
 <header class="catalog-header">
@@ -14,5 +19,7 @@
       cavesecretoprivado@proton.me
     </a>.
   </p>
-  <p class="catalog-header__count" id="reference-count" aria-live="polite">— RÉFÉRENCES</p>
+  {showReferenceCount && (
+    <p class="catalog-header__count" id="reference-count" aria-live="polite">— RÉFÉRENCES</p>
+  )}
 </header>
