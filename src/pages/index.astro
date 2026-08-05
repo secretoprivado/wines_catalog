@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import CatalogHeader from '../components/CatalogHeader.astro';
 import CatalogTabs from '../components/CatalogTabs.astro';
 import CatalogFilters from '../components/CatalogFilters.astro';
+import OrderModal from '../components/OrderModal.astro';
 ---
 
 <Layout>
@@ -11,17 +12,25 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     <CatalogTabs />
     <p class="catalog-reference-count" id="reference-count" aria-live="polite">— RÉFÉRENCES</p>
     <CatalogFilters />
+    <div class="selection-toolbar" id="selection-toolbar" hidden>
+      <button type="button" class="selection-toolbar__order" id="order-open-btn">
+        Commander
+      </button>
+    </div>
     <div id="catalog" class="catalog" aria-live="polite">
       <p class="catalog-message catalog-message--loading">Chargement du catalogue…</p>
     </div>
+    <OrderModal />
   </main>
 </Layout>
 
 <script>
   import {
     applyFilters,
+    applySelectionFilters,
     applySpiritFilters,
     buildFilterOptions,
+    CATALOG_SECTION_SELECTION,
     CATALOG_SECTION_SPIRITS,
     CATALOG_SECTION_WINES,
     countSectionTotal,
@@ -29,19 +38,50 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     filtersFromSearchParams,
     filtersToSearchParams,
     hasActiveFilters,
+    isSelectionSection,
     isWinesSection,
     type CatalogFilters,
     type CatalogSectionOption,
     type RegionGroupOption,
   } from '../lib/filters';
-  import { formatCountryName, formatReferenceCount, formatRegionName } from '../lib/format';
+  import {
+    formatCountryName,
+    formatPrice,
+    formatReferenceCount,
+    formatRegionName,
+    formatSelectionCount,
+  } from '../lib/format';
   import {
     fetchCatalog,
     fetchSpiritsCatalog,
     groupSpiritsByTypeAndCategory,
     groupWinesByCountryAndRegion,
   } from '../lib/sheets';
-  import { renderCatalog, renderCatalogParts, renderError, renderSpiritsCatalog } from '../lib/render';
+  import {
+    renderCatalog,
+    renderCatalogParts,
+    renderError,
+    renderSpiritsCatalog,
+    type CatalogRenderContext,
+  } from '../lib/render';
+  import {
+    getSpiritKey,
+    getWineKey,
+    loadSelection,
+    removeSelection,
+    toggleSelection,
+  } from '../lib/selection';
+  import {
+    buildOrderMailtoUrl,
+    buildOrderBodyText,
+    clampQuantity,
+    computeOrderTotal,
+    formatOrderTotal,
+    getMaxQuantity,
+    renderOrderModalList,
+    resolveSelectedOrderItems,
+    type OrderItem,
+  } from '../lib/order';
   import type { CatalogData, SpiritsCatalogData } from '../lib/types';
 
   const sheetId = import.meta.env.PUBLIC_GOOGLE_SHEET_ID;
@@ -64,13 +104,29 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const countryEl = document.getElementById('filter-country') as HTMLSelectElement | null;
   const regionEl = document.getElementById('filter-region') as HTMLSelectElement | null;
   const typeEl = document.getElementById('filter-type') as HTMLSelectElement | null;
+  const typeFieldEl = typeEl?.closest('.catalog-filters__field') as HTMLElement | null;
   const typeLabelEl = document.getElementById('filter-type-label');
   const resetEl = document.getElementById('filter-reset') as HTMLButtonElement | null;
   const statusEl = document.getElementById('filter-status');
+  const selectionBadgeEl = document.getElementById('selection-badge');
+  const selectionToolbarEl = document.getElementById('selection-toolbar');
+  const orderOpenBtn = document.getElementById('order-open-btn');
+  const orderModalEl = document.getElementById('order-modal');
+  const orderModalListEl = document.getElementById('order-modal-list');
+  const orderModalTotalEl = document.getElementById('order-modal-total');
+  const orderModalMailtoEl = document.getElementById('order-modal-mailto') as HTMLAnchorElement | null;
+  const orderModalCopyBtn = document.getElementById('order-modal-copy') as HTMLButtonElement | null;
+
+  const ORDER_COPY_LABEL = 'Copier la commande';
+  const ORDER_COPY_SUCCESS_LABEL = 'Copié !';
+  let orderCopyResetTimeout: ReturnType<typeof setTimeout> | null = null;
 
   let catalogData: CatalogData | null = null;
   let spiritsData: SpiritsCatalogData | null = null;
   let filters: CatalogFilters = { ...EMPTY_FILTERS };
+  let selectedKeys = loadSelection();
+  let orderQuantities = new Map<string, number>();
+  let orderModalPreviouslyFocused: HTMLElement | null = null;
 
   function readFilters(): CatalogFilters {
     return {
@@ -188,15 +244,29 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     select.value = allRegions.includes(selected) ? selected : '';
   }
 
-  function updateSectionFields(showingWines: boolean) {
+  function updateSectionFields(section: string) {
+    const showingWines = section === CATALOG_SECTION_WINES;
+    const showingSelection = section === CATALOG_SECTION_SELECTION;
+
     if (countryFieldEl) countryFieldEl.hidden = !showingWines;
     if (regionFieldEl) regionFieldEl.hidden = !showingWines;
+    if (typeFieldEl) typeFieldEl.hidden = showingSelection;
     if (typeLabelEl) typeLabelEl.textContent = showingWines ? 'Type' : 'Catégorie';
     if (searchEl) {
-      searchEl.placeholder = showingWines
-        ? 'Domaine, cuvée, cépage, appellation…'
-        : 'Distillerie, étiquette, origine…';
+      searchEl.placeholder = showingSelection
+        ? 'Rechercher dans ma sélection…'
+        : showingWines
+          ? 'Domaine, cuvée, cépage, appellation…'
+          : 'Distillerie, étiquette, origine…';
     }
+  }
+
+  function updateSelectionBadge() {
+    if (!selectionBadgeEl) return;
+
+    const count = selectedKeys.size;
+    selectionBadgeEl.hidden = count === 0;
+    selectionBadgeEl.textContent = count > 0 ? String(count) : '';
   }
 
   function syncCatalogTabs(section: string) {
@@ -209,8 +279,9 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   }
 
   function setCatalogSection(section: string, { resetSubFilters = true } = {}) {
-    const next =
-      section === CATALOG_SECTION_SPIRITS ? CATALOG_SECTION_SPIRITS : CATALOG_SECTION_WINES;
+    let next = CATALOG_SECTION_WINES;
+    if (section === CATALOG_SECTION_SPIRITS) next = CATALOG_SECTION_SPIRITS;
+    else if (section === CATALOG_SECTION_SELECTION) next = CATALOG_SECTION_SELECTION;
 
     if (catalogSectionEl) catalogSectionEl.value = next;
     syncCatalogTabs(next);
@@ -233,7 +304,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
 
     populateCatalogSelect(catalogSectionEl, options.catalogSections, filters.catalogSection);
     syncCatalogTabs(filters.catalogSection);
-    updateSectionFields(showingWines);
+    updateSectionFields(filters.catalogSection);
 
     if (showingWines) {
       populateSelect(countryEl, options.countries, 'Tous les pays', filters.country, formatCountryName);
@@ -272,30 +343,71 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     syncFiltersToUrl();
 
     const spirits = spiritsData?.spirits ?? [];
-    const filteredWines = applyFilters(catalogData.wines, filters);
-    const filteredSpirits = applySpiritFilters(spirits, filters);
+    const inSelection = isSelectionSection(filters);
+    const renderContext: CatalogRenderContext = {
+      selectedKeys,
+      mode: inSelection ? 'selection' : 'catalog',
+    };
+
+    let filteredWines;
+    let filteredSpirits;
+
+    if (inSelection) {
+      const result = applySelectionFilters(
+        catalogData.wines,
+        spirits,
+        selectedKeys,
+        filters.search,
+        getWineKey,
+        getSpiritKey,
+      );
+      filteredWines = result.wines;
+      filteredSpirits = result.spirits;
+    } else {
+      filteredWines = applyFilters(catalogData.wines, filters);
+      filteredSpirits = applySpiritFilters(spirits, filters);
+    }
+
     const countries = groupWinesByCountryAndRegion(filteredWines);
     const spiritTypes = groupSpiritsByTypeAndCategory(filteredSpirits);
 
-    const winesHtml = renderCatalog(countries, '');
-    const spiritsHtml = renderSpiritsCatalog(spiritTypes);
-    const emptyMessage = hasActiveFilters(filters)
-      ? 'Aucune référence ne correspond à vos critères.'
-      : undefined;
+    const winesHtml = renderCatalog(countries, '', renderContext);
+    const spiritsHtml = renderSpiritsCatalog(spiritTypes, '', renderContext);
+
+    let emptyMessage: string | undefined;
+    if (inSelection) {
+      emptyMessage = hasActiveFilters(filters)
+        ? 'Aucune référence ne correspond à vos critères.'
+        : 'Votre sélection est vide. Parcourez le catalogue pour ajouter des références.';
+    } else {
+      emptyMessage = hasActiveFilters(filters)
+        ? 'Aucune référence ne correspond à vos critères.'
+        : undefined;
+    }
+
+    const hasBothInSelection =
+      inSelection && filteredWines.length > 0 && filteredSpirits.length > 0;
 
     catalogEl.innerHTML = renderCatalogParts({
       winesHtml,
       spiritsHtml,
-      showWinesHeading: false,
-      showSpiritsHeading: false,
+      showWinesHeading: hasBothInSelection,
+      showSpiritsHeading: hasBothInSelection,
       emptyMessage,
     });
 
     const filteredTotal = filteredWines.length + filteredSpirits.length;
-    const sectionTotal = countSectionTotal(catalogData.wines, spirits, filters.catalogSection);
+    const sectionTotal = countSectionTotal(
+      catalogData.wines,
+      spirits,
+      filters.catalogSection,
+      selectedKeys,
+    );
 
     if (countEl) {
-      countEl.textContent = formatReferenceCount(filteredTotal, sectionTotal);
+      countEl.textContent = inSelection
+        ? formatSelectionCount(filteredTotal)
+        : formatReferenceCount(filteredTotal, sectionTotal);
     }
 
     if (statusEl) {
@@ -309,6 +421,199 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     }
 
     updateFilterToggle();
+    updateSelectionBadge();
+    updateSelectionToolbar(inSelection);
+  }
+
+  function updateSelectionToolbar(inSelection: boolean) {
+    if (!selectionToolbarEl) return;
+    selectionToolbarEl.hidden = !(inSelection && selectedKeys.size > 0);
+  }
+
+  function getOrderItems(): OrderItem[] {
+    if (!catalogData) return [];
+
+    return resolveSelectedOrderItems(
+      catalogData.wines,
+      spiritsData?.spirits ?? [],
+      selectedKeys,
+      orderQuantities,
+    );
+  }
+
+  function syncOrderQuantities(items: OrderItem[]) {
+    const next = new Map<string, number>();
+    for (const item of items) {
+      next.set(item.key, item.quantity);
+    }
+    orderQuantities = next;
+  }
+
+  function setOrderActionDisabled(disabled: boolean) {
+    if (orderModalMailtoEl) {
+      orderModalMailtoEl.classList.toggle('is-disabled', disabled);
+      orderModalMailtoEl.setAttribute('aria-disabled', String(disabled));
+      if (disabled) {
+        orderModalMailtoEl.tabIndex = -1;
+      } else {
+        orderModalMailtoEl.removeAttribute('tabindex');
+      }
+    }
+
+    if (orderModalCopyBtn) {
+      orderModalCopyBtn.disabled = disabled;
+    }
+  }
+
+  function updateOrderModalSummary(items: OrderItem[]) {
+    const active = items.filter((item) => item.quantity > 0);
+
+    if (orderModalTotalEl) {
+      orderModalTotalEl.textContent = formatOrderTotal(
+        computeOrderTotal(items),
+        active.length > 0,
+      );
+    }
+
+    if (orderModalMailtoEl) {
+      orderModalMailtoEl.href = buildOrderMailtoUrl(items);
+    }
+
+    setOrderActionDisabled(active.length === 0);
+  }
+
+  async function copyOrderToClipboard(items: OrderItem[]) {
+    const text = buildOrderBodyText(items);
+    await navigator.clipboard.writeText(text);
+  }
+
+  function showOrderCopySuccess() {
+    if (!orderModalCopyBtn) return;
+
+    orderModalCopyBtn.textContent = ORDER_COPY_SUCCESS_LABEL;
+    if (orderCopyResetTimeout) clearTimeout(orderCopyResetTimeout);
+    orderCopyResetTimeout = setTimeout(() => {
+      if (orderModalCopyBtn) orderModalCopyBtn.textContent = ORDER_COPY_LABEL;
+      orderCopyResetTimeout = null;
+    }, 2000);
+  }
+
+  function renderOrderModal() {
+    if (!orderModalListEl) return;
+
+    if (orderCopyResetTimeout) {
+      clearTimeout(orderCopyResetTimeout);
+      orderCopyResetTimeout = null;
+    }
+    if (orderModalCopyBtn) orderModalCopyBtn.textContent = ORDER_COPY_LABEL;
+
+    const items = getOrderItems();
+    syncOrderQuantities(items);
+    orderModalListEl.innerHTML = renderOrderModalList(items);
+    updateOrderModalSummary(items);
+  }
+
+  function updateOrderLineTotal(input: HTMLInputElement) {
+    const row = input.closest('.order-item');
+    const lineTotalEl = row?.querySelector('.order-item__line-total');
+    if (!lineTotalEl) return;
+
+    const priceRaw = row?.getAttribute('data-order-price');
+    const price = priceRaw ? Number(priceRaw) : null;
+    const quantity = Number(input.value) || 0;
+
+    if (price === null || Number.isNaN(price) || quantity <= 0) {
+      lineTotalEl.textContent = '—';
+      return;
+    }
+
+    lineTotalEl.textContent = formatPrice(price * quantity);
+  }
+
+  function openOrderModal() {
+    if (!orderModalEl || selectedKeys.size === 0) return;
+
+    orderModalPreviouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    renderOrderModal();
+    orderModalEl.hidden = false;
+    document.body.classList.add('order-modal-open');
+
+    const firstInput = orderModalEl.querySelector<HTMLInputElement>(
+      '.order-item__qty-input:not(:disabled)',
+    );
+    (firstInput ?? orderModalEl.querySelector<HTMLElement>('[data-order-action="close"]'))?.focus();
+  }
+
+  function closeOrderModal() {
+    if (!orderModalEl) return;
+
+    orderModalEl.hidden = true;
+    document.body.classList.remove('order-modal-open');
+    orderModalPreviouslyFocused?.focus();
+    orderModalPreviouslyFocused = null;
+  }
+
+  function bindOrderEvents() {
+    orderOpenBtn?.addEventListener('click', openOrderModal);
+
+    orderModalEl?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (target.closest('[data-order-action="close"]')) {
+        closeOrderModal();
+      }
+    });
+
+    orderModalListEl?.addEventListener('input', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (!target.matches('.order-item__qty-input')) return;
+
+      const key = target.dataset.orderQtyKey;
+      if (!key) return;
+
+      const max = Number(target.max) || getMaxQuantity(null);
+      const quantity = clampQuantity(Number(target.value), max);
+      target.value = String(quantity);
+      orderQuantities.set(key, quantity);
+      updateOrderLineTotal(target);
+
+      const items = getOrderItems().map((item) =>
+        item.key === key ? { ...item, quantity } : item,
+      );
+      updateOrderModalSummary(items);
+    });
+
+    orderModalMailtoEl?.addEventListener('click', (event) => {
+      if (orderModalMailtoEl.classList.contains('is-disabled')) {
+        event.preventDefault();
+      }
+    });
+
+    orderModalCopyBtn?.addEventListener('click', async () => {
+      const items = getOrderItems();
+      const active = items.filter((item) => item.quantity > 0);
+      if (active.length === 0) return;
+
+      try {
+        await copyOrderToClipboard(items);
+        showOrderCopySuccess();
+      } catch {
+        // Fallback for browsers blocking clipboard API.
+        const text = buildOrderBodyText(items);
+        window.prompt('Copiez la commande ci-dessous :', text);
+      }
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && orderModalEl && !orderModalEl.hidden) {
+        closeOrderModal();
+      }
+    });
   }
 
   function updateFilterToggle() {
@@ -339,6 +644,30 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (catalogSectionEl) catalogSectionEl.value = currentSection;
     syncCatalogTabs(currentSection);
     updateCatalog();
+  }
+
+  function bindSelectionEvents() {
+    catalogEl?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const button = target.closest<HTMLButtonElement>('[data-selection-action]');
+      if (!button) return;
+
+      const key = button.dataset.selectionKey;
+      const action = button.dataset.selectionAction;
+      if (!key || !action) return;
+
+      if (action === 'toggle') {
+        toggleSelection(key, selectedKeys);
+      } else if (action === 'remove') {
+        removeSelection(key, selectedKeys);
+      }
+
+      selectedKeys = loadSelection();
+      updateSelectionBadge();
+      updateCatalog();
+    });
   }
 
   function bindFilterEvents() {
@@ -385,6 +714,10 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       if (tabsEl) tabsEl.hidden = false;
       if (filtersEl) filtersEl.hidden = false;
       bindFilterEvents();
+      bindSelectionEvents();
+      bindOrderEvents();
+      selectedKeys = loadSelection();
+      updateSelectionBadge();
       applyFiltersFromUrl();
       updateCatalog();
     } catch (error) {

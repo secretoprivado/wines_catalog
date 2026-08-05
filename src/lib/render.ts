@@ -6,6 +6,7 @@ import type {
   SpiritTypeGroup,
   Wine,
 } from './types';
+import { getSpiritKey, getWineKey } from './selection';
 import {
   formatAbv,
   formatAging,
@@ -35,6 +36,70 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+export interface CatalogRenderContext {
+  selectedKeys: Set<string>;
+  mode: 'catalog' | 'selection';
+}
+
+const ICON_PLUS = `<svg class="selection-btn__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+
+const ICON_CHECK = `<svg class="selection-btn__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function renderSelectionControl(
+  itemKey: string,
+  isSelected: boolean,
+  context: CatalogRenderContext,
+): string {
+  if (context.mode === 'selection') {
+    return `
+      <button
+        type="button"
+        class="selection-btn selection-btn--remove"
+        data-selection-key="${escapeHtml(itemKey)}"
+        data-selection-action="remove"
+        aria-label="Retirer de ma sélection"
+      >
+        Retirer
+      </button>
+    `;
+  }
+
+  const label = isSelected ? 'Retirer de ma sélection' : 'Ajouter à ma sélection';
+  const icon = isSelected ? ICON_CHECK : ICON_PLUS;
+  const selectedClass = isSelected ? ' is-selected' : '';
+
+  return `
+    <button
+      type="button"
+      class="selection-btn${selectedClass}"
+      data-selection-key="${escapeHtml(itemKey)}"
+      data-selection-action="toggle"
+      aria-label="${escapeHtml(label)}"
+      aria-pressed="${isSelected}"
+    >
+      ${icon}
+    </button>
+  `;
+}
+
+function buildRowSelection(
+  itemKey: string,
+  isSelected: boolean,
+  context?: CatalogRenderContext,
+): { actionsHtml: string; rowClass: string } {
+  if (!context) {
+    return { actionsHtml: '', rowClass: 'wine-row' };
+  }
+
+  const rowClass =
+    context.mode === 'selection' ? 'wine-row wine-row--selection' : 'wine-row wine-row--selectable';
+
+  return {
+    actionsHtml: `<div class="wine-row__actions">${renderSelectionControl(itemKey, isSelected, context)}</div>`,
+    rowClass,
+  };
 }
 
 function renderPrice(price: number | null): string {
@@ -155,11 +220,14 @@ function renderScores(scores: ScoreItem[]): string {
   `;
 }
 
-function renderWineRow(wine: Wine): string {
+function renderWineRow(wine: Wine, context?: CatalogRenderContext): string {
   const vintage = formatVintage(wine.vintage);
   const stock = formatStockLine(wine.stock, wine.volume);
   const details = buildDetails(wine);
   const scores = buildScores(wine);
+  const itemKey = getWineKey(wine);
+  const isSelected = context ? context.selectedKeys.has(itemKey) : false;
+  const { actionsHtml, rowClass } = buildRowSelection(itemKey, isSelected, context);
 
   const vintageHtml = vintage
     ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
@@ -188,7 +256,8 @@ function renderWineRow(wine: Wine): string {
   const scoresHtml = renderScores(scores);
 
   return `
-    <article class="wine-row">
+    <article class="${rowClass}">
+      ${actionsHtml}
       <div class="wine-row__header">
         <div class="wine-row__domain">
           <h3 class="wine-row__domain-name">${escapeHtml(wine.domain)}</h3>
@@ -210,8 +279,8 @@ function renderWineRow(wine: Wine): string {
   `;
 }
 
-function renderRegionSection(group: RegionGroup): string {
-  const wines = group.wines.map(renderWineRow).join('');
+function renderRegionSection(group: RegionGroup, context?: CatalogRenderContext): string {
+  const wines = group.wines.map((wine) => renderWineRow(wine, context)).join('');
 
   return `
     <section class="region-section">
@@ -226,8 +295,8 @@ function renderRegionSection(group: RegionGroup): string {
   `;
 }
 
-function renderCountrySection(group: CountryGroup): string {
-  const regions = group.regions.map(renderRegionSection).join('');
+function renderCountrySection(group: CountryGroup, context?: CatalogRenderContext): string {
+  const regions = group.regions.map((region) => renderRegionSection(region, context)).join('');
 
   return `
     <section class="country-section">
@@ -242,7 +311,11 @@ function renderCountrySection(group: CountryGroup): string {
   `;
 }
 
-export function renderCatalog(countries: CountryGroup[], emptyMessage?: string): string {
+export function renderCatalog(
+  countries: CountryGroup[],
+  emptyMessage?: string,
+  context?: CatalogRenderContext,
+): string {
   if (countries.length === 0) {
     if (emptyMessage === '') return '';
     return `<p class="catalog-message">${escapeHtml(
@@ -250,7 +323,7 @@ export function renderCatalog(countries: CountryGroup[], emptyMessage?: string):
     )}</p>`;
   }
 
-  return countries.map(renderCountrySection).join('');
+  return countries.map((country) => renderCountrySection(country, context)).join('');
 }
 
 function buildSpiritDetails(spirit: Spirit): DetailItem[] {
@@ -297,10 +370,13 @@ function renderSpiritComment(spirit: Spirit): string {
   `;
 }
 
-function renderSpiritRow(spirit: Spirit): string {
+function renderSpiritRow(spirit: Spirit, context?: CatalogRenderContext): string {
   const vintage = formatVintage(spirit.vintage);
   const stock = formatStockLine(spirit.stock, spirit.volume);
   const details = buildSpiritDetails(spirit);
+  const itemKey = getSpiritKey(spirit);
+  const isSelected = context ? context.selectedKeys.has(itemKey) : false;
+  const { actionsHtml, rowClass } = buildRowSelection(itemKey, isSelected, context);
 
   const vintageHtml = vintage
     ? `<span class="wine-row__vintage">${escapeHtml(vintage)}</span>`
@@ -322,7 +398,8 @@ function renderSpiritRow(spirit: Spirit): string {
       : '';
 
   return `
-    <article class="wine-row">
+    <article class="${rowClass}">
+      ${actionsHtml}
       <div class="wine-row__header">
         <div class="wine-row__domain">
           <h3 class="wine-row__domain-name">${escapeHtml(spirit.distillery)}</h3>
@@ -342,8 +419,11 @@ function renderSpiritRow(spirit: Spirit): string {
   `;
 }
 
-function renderSpiritCategorySection(group: SpiritCategoryGroup): string {
-  const spirits = group.spirits.map(renderSpiritRow).join('');
+function renderSpiritCategorySection(
+  group: SpiritCategoryGroup,
+  context?: CatalogRenderContext,
+): string {
+  const spirits = group.spirits.map((spirit) => renderSpiritRow(spirit, context)).join('');
 
   return `
     <section class="region-section">
@@ -358,8 +438,10 @@ function renderSpiritCategorySection(group: SpiritCategoryGroup): string {
   `;
 }
 
-function renderSpiritTypeSection(group: SpiritTypeGroup): string {
-  const categories = group.categories.map(renderSpiritCategorySection).join('');
+function renderSpiritTypeSection(group: SpiritTypeGroup, context?: CatalogRenderContext): string {
+  const categories = group.categories
+    .map((category) => renderSpiritCategorySection(category, context))
+    .join('');
   const categoryCount = group.categories.reduce((sum, cat) => sum + cat.spirits.length, 0);
 
   return `
@@ -375,13 +457,17 @@ function renderSpiritTypeSection(group: SpiritTypeGroup): string {
   `;
 }
 
-export function renderSpiritsCatalog(types: SpiritTypeGroup[], emptyMessage?: string): string {
+export function renderSpiritsCatalog(
+  types: SpiritTypeGroup[],
+  emptyMessage?: string,
+  context?: CatalogRenderContext,
+): string {
   if (types.length === 0) {
     if (!emptyMessage) return '';
     return `<p class="catalog-message">${escapeHtml(emptyMessage)}</p>`;
   }
 
-  return types.map(renderSpiritTypeSection).join('');
+  return types.map((type) => renderSpiritTypeSection(type, context)).join('');
 }
 
 export function renderCatalogParts(options: {

@@ -201,3 +201,7 @@ export function formatReferenceCount(filtered: number, total: number): string {
   if (filtered === total) return formatTotalReferences(total);
   return `${filtered} SUR ${total} RÉFÉRENCE${total > 1 ? 'S' : ''}`;
 }
+
+export function formatSelectionCount(count: number): string {
+  return `${count} SÉLECTIONNÉ${count > 1 ? 'S' : ''}`;
+}
