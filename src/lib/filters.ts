@@ -3,6 +3,7 @@ import type { Spirit, Wine } from './types';
 
 export const CATALOG_SECTION_WINES = 'vins';
 export const CATALOG_SECTION_SPIRITS = 'spiritueux';
+export const CATALOG_SECTION_SELECTION = 'selection';
 
 export interface CatalogFilters {
   catalogSection: string;
@@ -23,7 +24,9 @@ export const EMPTY_FILTERS: CatalogFilters = {
 };
 
 function normalizeCatalogSection(value: string | null): string {
-  return value === CATALOG_SECTION_SPIRITS ? CATALOG_SECTION_SPIRITS : CATALOG_SECTION_WINES;
+  if (value === CATALOG_SECTION_SPIRITS) return CATALOG_SECTION_SPIRITS;
+  if (value === CATALOG_SECTION_SELECTION) return CATALOG_SECTION_SELECTION;
+  return CATALOG_SECTION_WINES;
 }
 
 export function filtersFromSearchParams(params: URLSearchParams): CatalogFilters {
@@ -106,6 +109,10 @@ export function isSpiritsSection(filters: CatalogFilters): boolean {
   return filters.catalogSection === CATALOG_SECTION_SPIRITS;
 }
 
+export function isSelectionSection(filters: CatalogFilters): boolean {
+  return filters.catalogSection === CATALOG_SECTION_SELECTION;
+}
+
 function buildRegionsByCountry(wines: Wine[], countryFilter: string): RegionGroupOption[] {
   const source = countryFilter ? wines.filter((wine) => wine.country === countryFilter) : wines;
   const countryMap = new Map<string, Set<string>>();
@@ -180,6 +187,7 @@ export function buildCatalogSections(): CatalogSectionOption[] {
   return [
     { value: CATALOG_SECTION_WINES, label: 'Vins' },
     { value: CATALOG_SECTION_SPIRITS, label: 'Spiritueux' },
+    { value: CATALOG_SECTION_SELECTION, label: 'Ma sélection' },
   ];
 }
 
@@ -276,12 +284,44 @@ export function applySpiritFilters(spirits: Spirit[], filters: CatalogFilters): 
   });
 }
 
+export interface SelectionFilterResult {
+  wines: Wine[];
+  spirits: Spirit[];
+}
+
+export function applySelectionFilters(
+  wines: Wine[],
+  spirits: Spirit[],
+  selectedKeys: Set<string>,
+  search: string,
+  getWineKey: (wine: Wine) => string,
+  getSpiritKey: (spirit: Spirit) => string,
+): SelectionFilterResult {
+  const normalizedSearch = normalizeText(search);
+
+  const filteredWines = wines.filter((wine) => {
+    if (!selectedKeys.has(getWineKey(wine))) return false;
+    if (normalizedSearch && !wineSearchBlob(wine).includes(normalizedSearch)) return false;
+    return true;
+  });
+
+  const filteredSpirits = spirits.filter((spirit) => {
+    if (!selectedKeys.has(getSpiritKey(spirit))) return false;
+    if (normalizedSearch && !spiritSearchBlob(spirit).includes(normalizedSearch)) return false;
+    return true;
+  });
+
+  return { wines: filteredWines, spirits: filteredSpirits };
+}
+
 export function countSectionTotal(
   wines: Wine[],
   spirits: Spirit[],
   catalogSection: string,
+  selectedKeys?: Set<string>,
 ): number {
   if (catalogSection === CATALOG_SECTION_WINES) return wines.length;
   if (catalogSection === CATALOG_SECTION_SPIRITS) return spirits.length;
+  if (catalogSection === CATALOG_SECTION_SELECTION) return selectedKeys?.size ?? 0;
   return 0;
 }
