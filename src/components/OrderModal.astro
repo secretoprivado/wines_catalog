@@ -1,0 +1,50 @@
+---
+
+---
+
+<div
+  id="order-modal"
+  class="order-modal"
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="order-modal-title"
+>
+  <div class="order-modal__backdrop" data-order-action="close"></div>
+  <div class="order-modal__panel" role="document">
+    <header class="order-modal__header">
+      <h2 class="order-modal__title" id="order-modal-title">Commander ma sélection</h2>
+      <button
+        type="button"
+        class="order-modal__close"
+        data-order-action="close"
+        aria-label="Fermer"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </header>
+    <div id="order-modal-list" class="order-modal__list"></div>
+    <footer class="order-modal__footer">
+      <p class="order-modal__total">
+        Total
+        <span class="order-modal__total-value" id="order-modal-total">—</span>
+      </p>
+      <div class="order-modal__actions">
+        <button
+          type="button"
+          id="order-modal-copy"
+          class="order-modal__cta order-modal__cta--secondary"
+        >
+          Copier la commande
+        </button>
+        <a
+          id="order-modal-mailto"
+          class="order-modal__cta"
+          href={`mailto:cavesecretoprivado@proton.me?subject=commande`}
+        >
+          Envoyer la commande par e-mail
+        </a>
+      </div>
+    </footer>
+  </div>
+</div>

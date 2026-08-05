@@ -33,12 +33,25 @@ const base = import.meta.env.BASE_URL;
         >
           Spiritueux
         </button>
+        <button
+          type="button"
+          class="catalog-tabs__tab"
+          role="tab"
+          id="tab-selection"
+          data-catalog="selection"
+          aria-selected="false"
+          aria-controls="catalog"
+        >
+          Ma sélection
+          <span class="catalog-tabs__badge" id="selection-badge" hidden aria-hidden="true"></span>
+        </button>
         <a class="catalog-tabs__tab" href={`${base}a-propos/`}>À propos</a>
       </>
     ) : (
       <>
         <a class="catalog-tabs__tab" href={`${base}?catalog=vins`}>Vins</a>
         <a class="catalog-tabs__tab" href={`${base}?catalog=spiritueux`}>Spiritueux</a>
+        <a class="catalog-tabs__tab" href={`${base}?catalog=selection`}>Ma sélection</a>
         <a class="catalog-tabs__tab is-active" href={`${base}a-propos/`} aria-current="page">
           À propos
         </a>
