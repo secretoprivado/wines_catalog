@@ -65,6 +65,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
   const regionEl = document.getElementById('filter-region') as HTMLSelectElement | null;
   const typeEl = document.getElementById('filter-type') as HTMLSelectElement | null;
   const typeLabelEl = document.getElementById('filter-type-label');
+  const vintageEl = document.getElementById('filter-vintage') as HTMLSelectElement | null;
   const resetEl = document.getElementById('filter-reset') as HTMLButtonElement | null;
   const statusEl = document.getElementById('filter-status');
 
@@ -79,6 +80,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       country: countryEl?.value ?? '',
       region: regionEl?.value ?? '',
       type: typeEl?.value ?? '',
+      vintage: vintageEl?.value ?? '',
     };
   }
 
@@ -88,6 +90,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (countryEl) countryEl.value = next.country;
     if (regionEl) regionEl.value = next.region;
     if (typeEl) typeEl.value = next.type;
+    if (vintageEl) vintageEl.value = next.vintage;
     syncCatalogTabs(next.catalogSection);
   }
 
@@ -219,13 +222,14 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       if (countryEl) countryEl.value = '';
       if (regionEl) regionEl.value = '';
       if (typeEl) typeEl.value = '';
+      if (vintageEl) vintageEl.value = '';
     }
 
     updateCatalog();
   }
 
   function updateFilterOptions() {
-    if (!catalogData || !catalogSectionEl || !countryEl || !regionEl || !typeEl) return;
+    if (!catalogData || !catalogSectionEl || !countryEl || !regionEl || !typeEl || !vintageEl) return;
 
     const spirits = spiritsData?.spirits ?? [];
     const options = buildFilterOptions(catalogData.wines, spirits, filters);
@@ -249,6 +253,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       showingWines ? 'Tous les types' : 'Toutes les catégories',
       filters.type,
     );
+    populateSelect(vintageEl, options.vintages, 'Tous les millésimes', filters.vintage);
   }
 
   function updateCatalog() {
@@ -258,6 +263,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     const countryReady = Boolean(countryEl && countryEl.options.length > 1);
     const regionReady = Boolean(regionEl && regionEl.options.length > 1);
     const typeReady = Boolean(typeEl && typeEl.options.length > 1);
+    const vintageReady = Boolean(vintageEl && vintageEl.options.length > 1);
 
     filters = {
       catalogSection: fromForm.catalogSection,
@@ -265,6 +271,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
       country: countryReady ? fromForm.country : filters.country,
       region: regionReady ? fromForm.region : filters.region,
       type: typeReady ? fromForm.type : filters.type,
+      vintage: vintageReady ? fromForm.vintage : filters.vintage,
     };
 
     updateFilterOptions();
@@ -335,6 +342,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     if (countryEl) countryEl.value = '';
     if (regionEl) regionEl.value = '';
     if (typeEl) typeEl.value = '';
+    if (vintageEl) vintageEl.value = '';
     filters = { ...EMPTY_FILTERS, catalogSection: currentSection };
     if (catalogSectionEl) catalogSectionEl.value = currentSection;
     syncCatalogTabs(currentSection);
@@ -362,6 +370,7 @@ import CatalogFilters from '../components/CatalogFilters.astro';
     });
     regionEl?.addEventListener('change', updateCatalog);
     typeEl?.addEventListener('change', updateCatalog);
+    vintageEl?.addEventListener('change', updateCatalog);
     resetEl?.addEventListener('click', resetFilters);
 
     window.addEventListener('popstate', () => {

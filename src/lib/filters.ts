@@ -10,6 +10,7 @@ export interface CatalogFilters {
   country: string;
   region: string;
   type: string;
+  vintage: string;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = {
@@ -18,6 +19,7 @@ export const EMPTY_FILTERS: CatalogFilters = {
   country: '',
   region: '',
   type: '',
+  vintage: '',
 };
 
 function normalizeCatalogSection(value: string | null): string {
@@ -31,6 +33,7 @@ export function filtersFromSearchParams(params: URLSearchParams): CatalogFilters
     country: params.get('country') ?? '',
     region: params.get('region') ?? '',
     type: params.get('type') ?? '',
+    vintage: params.get('vintage') ?? '',
   };
 }
 
@@ -49,6 +52,9 @@ export function filtersToSearchParams(filters: CatalogFilters): URLSearchParams 
   }
   if (filters.type) {
     params.set('type', filters.type);
+  }
+  if (filters.vintage) {
+    params.set('vintage', filters.vintage);
   }
 
   return params;
@@ -69,6 +75,7 @@ export interface FilterOptions {
   countries: string[];
   regionsByCountry: RegionGroupOption[];
   types: string[];
+  vintages: string[];
 }
 
 function normalizeText(value: string): string {
@@ -164,7 +171,8 @@ export function hasActiveFilters(filters: CatalogFilters): boolean {
     filters.search.trim() !== '' ||
     filters.country !== '' ||
     filters.region !== '' ||
-    filters.type !== ''
+    filters.type !== '' ||
+    filters.vintage !== ''
   );
 }
 
@@ -194,6 +202,34 @@ function buildTypes(wines: Wine[], spirits: Spirit[], filters: CatalogFilters): 
   return [...new Set(categories)].sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
+function compareVintagesDesc(a: string, b: string): number {
+  return Number(b) - Number(a);
+}
+
+function buildVintages(wines: Wine[], spirits: Spirit[], filters: CatalogFilters): string[] {
+  if (isWinesSection(filters)) {
+    const wineSource = wines.filter((wine) => {
+      if (filters.country && wine.country !== filters.country) return false;
+      if (filters.region && wine.region !== filters.region) return false;
+      if (filters.type && wine.type !== filters.type) return false;
+      return true;
+    });
+
+    return [...new Set(wineSource.map((wine) => wine.vintage).filter(Boolean) as string[])].sort(
+      compareVintagesDesc,
+    );
+  }
+
+  const spiritSource = spirits.filter((spirit) => {
+    if (filters.type && spirit.category !== filters.type) return false;
+    return true;
+  });
+
+  return [...new Set(spiritSource.map((spirit) => spirit.vintage).filter(Boolean) as string[])].sort(
+    compareVintagesDesc,
+  );
+}
+
 export function buildFilterOptions(
   wines: Wine[],
   spirits: Spirit[],
@@ -207,8 +243,9 @@ export function buildFilterOptions(
     ? buildRegionsByCountry(wines, filters.country)
     : [];
   const types = buildTypes(wines, spirits, filters);
+  const vintages = buildVintages(wines, spirits, filters);
 
-  return { catalogSections, countries, regionsByCountry, types };
+  return { catalogSections, countries, regionsByCountry, types, vintages };
 }
 
 export function applyFilters(wines: Wine[], filters: CatalogFilters): Wine[] {
@@ -220,6 +257,7 @@ export function applyFilters(wines: Wine[], filters: CatalogFilters): Wine[] {
     if (filters.country && wine.country !== filters.country) return false;
     if (filters.region && wine.region !== filters.region) return false;
     if (filters.type && wine.type !== filters.type) return false;
+    if (filters.vintage && wine.vintage !== filters.vintage) return false;
     if (search && !wineSearchBlob(wine).includes(search)) return false;
     return true;
   });
@@ -232,6 +270,7 @@ export function applySpiritFilters(spirits: Spirit[], filters: CatalogFilters): 
 
   return spirits.filter((spirit) => {
     if (filters.type && spirit.category !== filters.type) return false;
+    if (filters.vintage && spirit.vintage !== filters.vintage) return false;
     if (search && !spiritSearchBlob(spirit).includes(search)) return false;
     return true;
   });
