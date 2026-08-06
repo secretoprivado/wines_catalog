@@ -803,6 +803,22 @@ a.catalog-tabs__tab {
   padding: 0;
 }
 
+.wine-row__sulfites {
+  margin: 0.5rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  color: color-mix(in oklch, var(--muted-foreground) 72%, var(--background));
+}
+
+.wine-row__sulfites sub {
+  font-size: 0.85em;
+  vertical-align: baseline;
+  position: relative;
+  bottom: -0.15em;
+}
+
 .wine-detail {
   display: flex;
   align-items: baseline;

@@ -206,6 +206,7 @@ function renderWineRow(wine: Wine): string {
       ${commentHtml}
       ${detailsHtml}
       ${scoresHtml}
+      <p class="wine-row__sulfites" role="note">SO<sub>2</sub>&nbsp;: contient des sulfites</p>
     </article>
   `;
 }
