@@ -33,14 +33,14 @@ const base = import.meta.env.BASE_URL;
         >
           Spiritueux
         </button>
-        <a class="catalog-tabs__tab" href={`${base}a-propos/`}>À propos</a>
+        <a class="catalog-tabs__tab" href={`${base}services/`}>Moi et mes services</a>
       </>
     ) : (
       <>
         <a class="catalog-tabs__tab" href={`${base}?catalog=vins`}>Vins</a>
         <a class="catalog-tabs__tab" href={`${base}?catalog=spiritueux`}>Spiritueux</a>
-        <a class="catalog-tabs__tab is-active" href={`${base}a-propos/`} aria-current="page">
-          À propos
+        <a class="catalog-tabs__tab is-active" href={`${base}services/`} aria-current="page">
+          Moi et mes services
         </a>
       </>
     )}
