@@ -778,6 +778,14 @@ a.catalog-tabs__tab {
   color: var(--foreground);
 }
 
+.wine-row__price-ttc {
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
 .wine-row__price-dash {
   display: inline-block;
   width: 0.55em;

@@ -42,7 +42,7 @@ function renderPrice(price: number | null): string {
     return `<span class="wine-row__price" aria-label="Prix non indiqué"><span class="wine-row__price-dash" aria-hidden="true"></span></span>`;
   }
 
-  return `<span class="wine-row__price">${escapeHtml(formatPrice(price))}</span>`;
+  return `<span class="wine-row__price">${escapeHtml(formatPrice(price))} <span class="wine-row__price-ttc">TTC</span></span>`;
 }
 
 interface DetailItem {
