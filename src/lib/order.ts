@@ -205,7 +205,7 @@ function renderOrderItemBlock(item: OrderItem, index: number): string {
 
   const unitPrice = formatPrice(item.price);
   const lineTotal = formatPrice(item.price * item.quantity);
-  return `${index}. ${item.label}\n   ${qtyLine} · ${unitPrice}/btl. · Sous-total : ${lineTotal}`;
+  return `${index}. ${item.label}\n   ${qtyLine} · ${unitPrice}/btl. · Sous-total TTC : ${lineTotal}`;
 }
 
 function renderOrderItems(sectionItems: OrderItem[], startIndex: number): string {
@@ -290,7 +290,7 @@ export function buildOrderBodyText(
   if (active.length > 0) {
     bodyParts.push('');
     if (total !== null) {
-      bodyParts.push(`Total indicatif : ${formatPrice(total)}`);
+      bodyParts.push(`Total indicatif TTC : ${formatPrice(total)}`);
     } else {
       bodyParts.push(
         'Total indicatif : non calculable (prix manquant sur une ou plusieurs références)',
@@ -380,7 +380,9 @@ export function renderOrderModalItem(item: OrderItem): string {
           data-order-qty-key="${escapeHtml(item.key)}"
           ${outOfStock ? 'disabled' : ''}
         />
-        <span class="order-item__line-total" aria-live="polite">${escapeHtml(lineTotal)}</span>
+        <span class="order-item__line-amount" aria-live="polite">
+          <span class="order-item__line-total">${escapeHtml(lineTotal)}</span>${item.price !== null ? `<span class="order-item__line-ttc"${item.quantity > 0 ? '' : ' hidden'}>TTC</span>` : ''}
+        </span>
       </div>
     </div>
   `;

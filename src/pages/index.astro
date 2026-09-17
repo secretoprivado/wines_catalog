@@ -562,6 +562,7 @@ import OrderModal from '../components/OrderModal.astro';
   function updateOrderLineTotal(input: HTMLInputElement) {
     const row = input.closest('.order-item');
     const lineTotalEl = row?.querySelector('.order-item__line-total');
+    const lineTtcEl = row?.querySelector('.order-item__line-ttc');
     if (!lineTotalEl) return;
 
     const priceRaw = row?.getAttribute('data-order-price');
@@ -570,10 +571,12 @@ import OrderModal from '../components/OrderModal.astro';
 
     if (price === null || Number.isNaN(price) || quantity <= 0) {
       lineTotalEl.textContent = '—';
+      lineTtcEl?.toggleAttribute('hidden', true);
       return;
     }
 
     lineTotalEl.textContent = formatPrice(price * quantity);
+    lineTtcEl?.toggleAttribute('hidden', false);
   }
 
   function openOrderModal() {
