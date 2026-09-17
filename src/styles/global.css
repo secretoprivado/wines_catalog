@@ -254,6 +254,23 @@ a.catalog-tabs__tab {
   margin-top: 1rem;
 }
 
+.about-page__section a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.about-page__section a:hover {
+  color: var(--accent);
+}
+
+.about-page__section a:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 0.2rem;
+  border-radius: 0.125rem;
+}
+
 .about-page__services {
   margin: 0 0 1.25rem;
   padding: 0;
