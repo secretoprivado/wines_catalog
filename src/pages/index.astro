@@ -137,6 +137,7 @@ import OrderModal from '../components/OrderModal.astro';
   let selectedKeys = loadSelection();
   let orderQuantities = new Map<string, number>();
   let orderModalPreviouslyFocused: HTMLElement | null = null;
+  let orderModalScrollLockY = 0;
 
   function readFilters(): CatalogFilters {
     return {
@@ -588,6 +589,9 @@ import OrderModal from '../components/OrderModal.astro';
 
     renderOrderModal();
     orderModalEl.hidden = false;
+
+    orderModalScrollLockY = window.scrollY;
+    document.body.style.top = `-${orderModalScrollLockY}px`;
     document.body.classList.add('order-modal-open');
 
     const customerFields = [
@@ -598,11 +602,10 @@ import OrderModal from '../components/OrderModal.astro';
     ].filter((field): field is HTMLInputElement => field !== null);
 
     const firstEmptyCustomer = customerFields.find((field) => !field.value.trim());
-    const firstQty = orderModalEl.querySelector<HTMLInputElement>(
-      '.order-item__qty-input:not(:disabled)',
-    );
+    const closeBtn = orderModalEl.querySelector<HTMLElement>('[data-order-action="close"]');
+    const focusTarget = firstEmptyCustomer ?? closeBtn;
 
-    (firstEmptyCustomer ?? firstQty ?? orderModalEl.querySelector<HTMLElement>('[data-order-action="close"]'))?.focus();
+    focusTarget?.focus({ preventScroll: true });
   }
 
   function closeOrderModal() {
@@ -610,7 +613,9 @@ import OrderModal from '../components/OrderModal.astro';
 
     orderModalEl.hidden = true;
     document.body.classList.remove('order-modal-open');
-    orderModalPreviouslyFocused?.focus();
+    document.body.style.top = '';
+    window.scrollTo(0, orderModalScrollLockY);
+    orderModalPreviouslyFocused?.focus({ preventScroll: true });
     orderModalPreviouslyFocused = null;
   }
 

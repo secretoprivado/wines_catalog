@@ -1128,6 +1128,8 @@ a.catalog-tabs__tab {
 /* Order modal */
 
 body.order-modal-open {
+  position: fixed;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -1242,7 +1244,7 @@ body.order-modal-open {
   border: 1px solid var(--border);
   background: var(--background);
   font-family: var(--font-sans);
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--foreground);
   transition: border-color 0.15s ease;
 }
@@ -1333,7 +1335,7 @@ body.order-modal-open {
   border: 1px solid var(--border);
   background: var(--background);
   font-family: var(--font-sans);
-  font-size: 0.875rem;
+  font-size: 1rem;
   text-align: center;
   color: var(--foreground);
 }
