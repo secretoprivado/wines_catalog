@@ -33,7 +33,10 @@ const base = import.meta.env.BASE_URL;
         >
           Spiritueux
         </button>
-        <a class="catalog-tabs__tab" href={`${base}services/`}>Moi et mes services</a>
+        <a class="catalog-tabs__tab" href={`${base}services/`} aria-label="Moi et mes services">
+          <span class="catalog-tabs__label catalog-tabs__label--long">Moi et mes services</span>
+          <span class="catalog-tabs__label catalog-tabs__label--short">Services</span>
+        </a>
         <button
           type="button"
           class="catalog-tabs__tab"
@@ -42,8 +45,10 @@ const base = import.meta.env.BASE_URL;
           data-catalog="selection"
           aria-selected="false"
           aria-controls="catalog"
+          aria-label="Ma sélection"
         >
-          Ma sélection
+          <span class="catalog-tabs__label catalog-tabs__label--long">Ma sélection</span>
+          <span class="catalog-tabs__label catalog-tabs__label--short">Sélection</span>
           <span class="catalog-tabs__badge" id="selection-badge" hidden aria-hidden="true"></span>
         </button>
       </>
@@ -51,10 +56,19 @@ const base = import.meta.env.BASE_URL;
       <>
         <a class="catalog-tabs__tab" href={`${base}?catalog=vins`}>Vins</a>
         <a class="catalog-tabs__tab" href={`${base}?catalog=spiritueux`}>Spiritueux</a>
-        <a class="catalog-tabs__tab is-active" href={`${base}services/`} aria-current="page">
-          Moi et mes services
+        <a
+          class="catalog-tabs__tab is-active"
+          href={`${base}services/`}
+          aria-current="page"
+          aria-label="Moi et mes services"
+        >
+          <span class="catalog-tabs__label catalog-tabs__label--long">Moi et mes services</span>
+          <span class="catalog-tabs__label catalog-tabs__label--short">Services</span>
         </a>
-        <a class="catalog-tabs__tab" href={`${base}?catalog=selection`}>Ma sélection</a>
+        <a class="catalog-tabs__tab" href={`${base}?catalog=selection`} aria-label="Ma sélection">
+          <span class="catalog-tabs__label catalog-tabs__label--long">Ma sélection</span>
+          <span class="catalog-tabs__label catalog-tabs__label--short">Sélection</span>
+        </a>
       </>
     )}
   </div>

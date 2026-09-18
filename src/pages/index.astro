@@ -592,8 +592,10 @@ import OrderModal from '../components/OrderModal.astro';
 
     orderModalScrollLockY = window.scrollY;
     document.body.style.top = `-${orderModalScrollLockY}px`;
+    document.documentElement.classList.add('order-modal-open');
     document.body.classList.add('order-modal-open');
 
+    const panel = orderModalEl.querySelector<HTMLElement>('.order-modal__panel');
     const customerFields = [
       orderCustomerNameEl,
       orderCustomerAddressEl,
@@ -603,15 +605,21 @@ import OrderModal from '../components/OrderModal.astro';
 
     const firstEmptyCustomer = customerFields.find((field) => !field.value.trim());
     const closeBtn = orderModalEl.querySelector<HTMLElement>('[data-order-action="close"]');
-    const focusTarget = firstEmptyCustomer ?? closeBtn;
+    const isCoarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const focusTarget = isCoarsePointer
+      ? panel
+      : (firstEmptyCustomer ?? closeBtn ?? panel);
 
-    focusTarget?.focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      focusTarget?.focus({ preventScroll: true });
+    });
   }
 
   function closeOrderModal() {
     if (!orderModalEl) return;
 
     orderModalEl.hidden = true;
+    document.documentElement.classList.remove('order-modal-open');
     document.body.classList.remove('order-modal-open');
     document.body.style.top = '';
     window.scrollTo(0, orderModalScrollLockY);

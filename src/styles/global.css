@@ -229,6 +229,33 @@ a.catalog-tabs__tab {
   display: none;
 }
 
+.catalog-tabs__label--short {
+  display: none;
+}
+
+@media (max-width: 42rem) {
+  .catalog-tabs__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem 1rem;
+    padding: 1rem 0;
+  }
+
+  .catalog-tabs__tab {
+    justify-self: center;
+    font-size: 1.125rem;
+    white-space: nowrap;
+  }
+
+  .catalog-tabs__label--long {
+    display: none;
+  }
+
+  .catalog-tabs__label--short {
+    display: inline;
+  }
+}
+
 /* About page */
 
 .about-page__figure {
@@ -1127,10 +1154,14 @@ a.catalog-tabs__tab {
 
 /* Order modal */
 
+html.order-modal-open,
+body.order-modal-open {
+  overflow: hidden;
+}
+
 body.order-modal-open {
   position: fixed;
   width: 100%;
-  overflow: hidden;
 }
 
 .order-modal[hidden] {
@@ -1141,9 +1172,19 @@ body.order-modal-open {
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
-  padding: var(--page-padding);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding:
+    max(0.75rem, env(safe-area-inset-top, 0px))
+    max(var(--page-padding), env(safe-area-inset-right, 0px))
+    max(0.75rem, env(safe-area-inset-bottom, 0px))
+    max(var(--page-padding), env(safe-area-inset-left, 0px));
+  overflow: hidden;
 }
 
 .order-modal__backdrop {
@@ -1158,13 +1199,35 @@ body.order-modal-open {
   flex-direction: column;
   width: min(36rem, 100%);
   max-height: min(90vh, 44rem);
+  max-height: min(90dvh, 44rem);
+  min-height: 0;
   background: var(--background);
   border: 1px solid var(--border);
   box-shadow: 0 1.5rem 3rem color-mix(in oklch, var(--foreground) 12%, transparent);
 }
 
+.order-modal__panel:focus {
+  outline: none;
+}
+
+.order-modal__panel:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.order-modal__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 .order-modal__header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -1263,8 +1326,6 @@ body.order-modal-open {
 }
 
 .order-modal__list {
-  flex: 1;
-  overflow-y: auto;
   padding: 0.5rem 1.25rem;
 }
 
@@ -1371,9 +1432,10 @@ body.order-modal-open {
 
 .order-modal__footer {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   gap: 0.875rem;
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1rem 1.25rem max(1.25rem, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
 }
 
@@ -1471,6 +1533,16 @@ body.order-modal-open {
 }
 
 @media (max-width: 768px) {
+  .order-modal {
+    align-items: stretch;
+  }
+
+  .order-modal__panel {
+    flex: 1 1 auto;
+    width: 100%;
+    max-height: 100%;
+  }
+
   .order-item {
     flex-direction: column;
     align-items: stretch;

@@ -11,7 +11,7 @@
   aria-labelledby="order-modal-title"
 >
   <div class="order-modal__backdrop" data-order-action="close"></div>
-  <div class="order-modal__panel" role="document">
+  <div class="order-modal__panel" role="document" tabindex="-1">
     <header class="order-modal__header">
       <h2 class="order-modal__title" id="order-modal-title">Commander ma sélection</h2>
       <button
@@ -23,6 +23,7 @@
         <span aria-hidden="true">×</span>
       </button>
     </header>
+    <div class="order-modal__scroll">
     <div class="order-modal__customer" id="order-modal-customer">
       <p class="order-modal__customer-title">Livraison</p>
       <div class="order-modal__fields">
@@ -77,6 +78,7 @@
       </p>
     </div>
     <div id="order-modal-list" class="order-modal__list"></div>
+    </div>
     <footer class="order-modal__footer">
       <p class="order-modal__total">
         Total
