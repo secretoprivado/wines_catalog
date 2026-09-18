@@ -18,6 +18,8 @@
   --muted: oklch(0.95 0.015 80);
   --muted-foreground: oklch(0.48 0.04 40);
   --accent: oklch(0.68 0.13 65);
+  /* Texte doré lisible sur --background (WCAG AA) */
+  --accent-text: oklch(0.41 0.11 52);
   --accent-foreground: oklch(0.22 0.03 25);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.98 0.008 85);
@@ -76,7 +78,7 @@ img {
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .catalog-header__title {
@@ -683,7 +685,7 @@ a.catalog-tabs__tab {
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 
@@ -745,7 +747,7 @@ a.catalog-tabs__tab {
   font-style: normal;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .wine-row__cert {
@@ -818,7 +820,7 @@ a.catalog-tabs__tab {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   line-height: 1;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .wine-row__comment-text {
@@ -964,7 +966,7 @@ a.catalog-tabs__tab {
   font-weight: 400;
   letter-spacing: 0.06em;
   line-height: 1.5;
-  color: color-mix(in oklch, var(--muted-foreground) 72%, var(--background));
+  color: var(--muted-foreground);
 }
 
 .wine-row__sulfites sub {
@@ -987,7 +989,7 @@ a.catalog-tabs__tab {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .wine-detail__value {
@@ -1025,7 +1027,7 @@ a.catalog-tabs__tab {
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .wine-row__scores-list {

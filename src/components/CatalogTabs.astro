@@ -8,28 +8,23 @@ const base = import.meta.env.BASE_URL;
 ---
 
 <nav class="catalog-tabs" id="catalog-tabs" aria-label="Catalogue">
-  <div class="catalog-tabs__list" role={page === 'catalog' ? 'tablist' : undefined}>
+  <div class="catalog-tabs__list">
     {page === 'catalog' ? (
       <>
         <button
           type="button"
           class="catalog-tabs__tab is-active"
-          role="tab"
           id="tab-vins"
           data-catalog="vins"
-          aria-selected="true"
-          aria-controls="catalog"
+          aria-current="true"
         >
           Vins
         </button>
         <button
           type="button"
           class="catalog-tabs__tab"
-          role="tab"
           id="tab-spiritueux"
           data-catalog="spiritueux"
-          aria-selected="false"
-          aria-controls="catalog"
         >
           Spiritueux
         </button>
@@ -40,11 +35,8 @@ const base = import.meta.env.BASE_URL;
         <button
           type="button"
           class="catalog-tabs__tab"
-          role="tab"
           id="tab-selection"
           data-catalog="selection"
-          aria-selected="false"
-          aria-controls="catalog"
           aria-label="Ma sélection"
         >
           <span class="catalog-tabs__label catalog-tabs__label--long">Ma sélection</span>

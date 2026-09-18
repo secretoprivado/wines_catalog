@@ -283,11 +283,17 @@ import OrderModal from '../components/OrderModal.astro';
   }
 
   function syncCatalogTabs(section: string) {
+    const activeTab = tabButtons.find((tab) => tab.classList.contains('is-active'));
+    if (activeTab?.dataset.catalog === section) return;
+
     for (const tab of tabButtons) {
       const isActive = tab.dataset.catalog === section;
       tab.classList.toggle('is-active', isActive);
-      tab.setAttribute('aria-selected', String(isActive));
-      tab.tabIndex = isActive ? 0 : -1;
+      if (isActive) {
+        tab.setAttribute('aria-current', 'true');
+      } else {
+        tab.removeAttribute('aria-current');
+      }
     }
   }
 
@@ -317,7 +323,6 @@ import OrderModal from '../components/OrderModal.astro';
     const showingWines = isWinesSection(filters);
 
     populateCatalogSelect(catalogSectionEl, options.catalogSections, filters.catalogSection);
-    syncCatalogTabs(filters.catalogSection);
     updateSectionFields(filters.catalogSection);
 
     if (showingWines) {
@@ -357,6 +362,7 @@ import OrderModal from '../components/OrderModal.astro';
 
     updateFilterOptions();
     filters = readFilters();
+    syncCatalogTabs(filters.catalogSection);
     syncFiltersToUrl();
 
     const spirits = spiritsData?.spirits ?? [];
