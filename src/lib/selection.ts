@@ -87,6 +87,10 @@ export function removeSelection(key: string, keys: Set<string>): void {
   saveSelection(next);
 }
 
+export function clearSelection(): void {
+  saveSelection(new Set());
+}
+
 export function pruneSelectionKeys(
   keys: Set<string>,
   wines: Wine[],

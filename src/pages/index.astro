@@ -67,6 +67,7 @@ import OrderModal from '../components/OrderModal.astro';
   import {
     getSpiritKey,
     getWineKey,
+    clearSelection,
     loadSelection,
     pruneSelectionKeys,
     removeSelection,
@@ -119,6 +120,8 @@ import OrderModal from '../components/OrderModal.astro';
   const selectionToolbarEl = document.getElementById('selection-toolbar');
   const orderOpenBtn = document.getElementById('order-open-btn');
   const orderModalEl = document.getElementById('order-modal');
+  const orderModalListToolbarEl = document.getElementById('order-modal-list-toolbar');
+  const orderModalClearBtn = document.getElementById('order-modal-clear');
   const orderModalListEl = document.getElementById('order-modal-list');
   const orderModalTotalEl = document.getElementById('order-modal-total');
   const orderModalMailtoEl = document.getElementById('order-modal-mailto') as HTMLAnchorElement | null;
@@ -554,6 +557,30 @@ import OrderModal from '../components/OrderModal.astro';
     }, 2000);
   }
 
+  function removeFromSelection(key: string) {
+    removeSelection(key, selectedKeys);
+    orderQuantities.delete(key);
+    selectedKeys = loadSelection();
+    updateSelectionBadge();
+    updateCatalog();
+
+    if (selectedKeys.size === 0) {
+      closeOrderModal();
+      return;
+    }
+
+    renderOrderModal();
+  }
+
+  function clearAllSelection() {
+    clearSelection();
+    orderQuantities = new Map();
+    selectedKeys = loadSelection();
+    updateSelectionBadge();
+    updateCatalog();
+    closeOrderModal();
+  }
+
   function renderOrderModal() {
     if (!orderModalListEl) return;
 
@@ -567,6 +594,9 @@ import OrderModal from '../components/OrderModal.astro';
 
     const items = getOrderItems();
     syncOrderQuantities(items);
+    if (orderModalListToolbarEl) {
+      orderModalListToolbarEl.hidden = items.length === 0;
+    }
     orderModalListEl.innerHTML = renderOrderModalList(items);
     updateOrderModalSummary(items);
   }
@@ -664,6 +694,25 @@ import OrderModal from '../components/OrderModal.astro';
     ]) {
       field?.addEventListener('input', onOrderCustomerInput);
     }
+
+    orderModalListEl?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const removeBtn = target.closest<HTMLButtonElement>('[data-order-action="remove-item"]');
+      if (!removeBtn) return;
+
+      const key = removeBtn.dataset.orderKey;
+      if (!key) return;
+
+      event.preventDefault();
+      removeFromSelection(key);
+    });
+
+    orderModalClearBtn?.addEventListener('click', () => {
+      if (selectedKeys.size === 0) return;
+      clearAllSelection();
+    });
 
     orderModalListEl?.addEventListener('input', (event) => {
       const target = event.target;
