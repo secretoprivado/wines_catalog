@@ -9,6 +9,7 @@ export const ORDER_DETAILS_STORAGE_KEY = 'wines_catalog_order_details';
 
 export interface OrderCustomerDetails {
   name: string;
+  phone: string;
   addressLine: string;
   postalCode: string;
   city: string;
@@ -16,6 +17,7 @@ export interface OrderCustomerDetails {
 
 export const EMPTY_ORDER_CUSTOMER_DETAILS: OrderCustomerDetails = {
   name: '',
+  phone: '',
   addressLine: '',
   postalCode: '',
   city: '',
@@ -135,6 +137,7 @@ export function loadOrderCustomerDetails(): OrderCustomerDetails {
     const parsed = JSON.parse(raw) as Partial<OrderCustomerDetails>;
     return {
       name: typeof parsed.name === 'string' ? parsed.name : '',
+      phone: typeof parsed.phone === 'string' ? parsed.phone : '',
       addressLine: typeof parsed.addressLine === 'string' ? parsed.addressLine : '',
       postalCode: typeof parsed.postalCode === 'string' ? parsed.postalCode : '',
       city: typeof parsed.city === 'string' ? parsed.city : '',
@@ -156,12 +159,7 @@ export function saveOrderCustomerDetails(details: OrderCustomerDetails): void {
 }
 
 export function isOrderCustomerDetailsComplete(details: OrderCustomerDetails): boolean {
-  return (
-    details.name.trim() !== '' &&
-    details.addressLine.trim() !== '' &&
-    details.postalCode.trim() !== '' &&
-    details.city.trim() !== ''
-  );
+  return details.name.trim() !== '' && details.phone.trim() !== '';
 }
 
 export interface OrderSummary {
@@ -228,6 +226,7 @@ function renderOrderCategorySection(
 
 function formatDeliveryAddress(details: OrderCustomerDetails): string {
   const name = details.name.trim();
+  const phone = details.phone.trim();
   const line = details.addressLine.trim();
   const postal = details.postalCode.trim();
   const city = details.city.trim();
@@ -235,9 +234,13 @@ function formatDeliveryAddress(details: OrderCustomerDetails): string {
 
   const parts: string[] = [];
   if (name) parts.push(`Nom : ${name}`);
-  parts.push('À livrer à :');
-  if (line) parts.push(line);
-  if (cityLine) parts.push(cityLine);
+  if (phone) parts.push(`Téléphone : ${phone}`);
+
+  if (line || cityLine) {
+    parts.push('À livrer à :');
+    if (line) parts.push(line);
+    if (cityLine) parts.push(cityLine);
+  }
 
   return parts.join('\n');
 }

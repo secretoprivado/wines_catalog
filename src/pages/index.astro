@@ -122,6 +122,7 @@ import OrderModal from '../components/OrderModal.astro';
   const orderModalMailtoEl = document.getElementById('order-modal-mailto') as HTMLAnchorElement | null;
   const orderModalCopyBtn = document.getElementById('order-modal-copy') as HTMLButtonElement | null;
   const orderCustomerNameEl = document.getElementById('order-customer-name') as HTMLInputElement | null;
+  const orderCustomerPhoneEl = document.getElementById('order-customer-phone') as HTMLInputElement | null;
   const orderCustomerAddressEl = document.getElementById('order-customer-address') as HTMLInputElement | null;
   const orderCustomerPostalEl = document.getElementById('order-customer-postal') as HTMLInputElement | null;
   const orderCustomerCityEl = document.getElementById('order-customer-city') as HTMLInputElement | null;
@@ -475,6 +476,7 @@ import OrderModal from '../components/OrderModal.astro';
   function readOrderCustomerDetails(): OrderCustomerDetails {
     return {
       name: orderCustomerNameEl?.value ?? '',
+      phone: orderCustomerPhoneEl?.value ?? '',
       addressLine: orderCustomerAddressEl?.value ?? '',
       postalCode: orderCustomerPostalEl?.value ?? '',
       city: orderCustomerCityEl?.value ?? '',
@@ -483,6 +485,7 @@ import OrderModal from '../components/OrderModal.astro';
 
   function syncOrderCustomerFields(details: OrderCustomerDetails) {
     if (orderCustomerNameEl) orderCustomerNameEl.value = details.name;
+    if (orderCustomerPhoneEl) orderCustomerPhoneEl.value = details.phone;
     if (orderCustomerAddressEl) orderCustomerAddressEl.value = details.addressLine;
     if (orderCustomerPostalEl) orderCustomerPostalEl.value = details.postalCode;
     if (orderCustomerCityEl) orderCustomerCityEl.value = details.city;
@@ -652,6 +655,7 @@ import OrderModal from '../components/OrderModal.astro';
 
     for (const field of [
       orderCustomerNameEl,
+      orderCustomerPhoneEl,
       orderCustomerAddressEl,
       orderCustomerPostalEl,
       orderCustomerCityEl,

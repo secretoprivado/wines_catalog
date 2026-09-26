@@ -39,18 +39,29 @@
           />
         </div>
         <div class="order-modal__field order-modal__field--full">
-          <label class="order-modal__label" for="order-customer-address">Adresse</label>
+          <label class="order-modal__label" for="order-customer-phone">Téléphone</label>
+          <input
+            class="order-modal__input"
+            type="tel"
+            id="order-customer-phone"
+            name="customer-phone"
+            autocomplete="tel"
+            inputmode="tel"
+            required
+          />
+        </div>
+        <div class="order-modal__field order-modal__field--full">
+          <label class="order-modal__label" for="order-customer-address">Adresse <span class="order-modal__optional">(facultatif)</span></label>
           <input
             class="order-modal__input"
             type="text"
             id="order-customer-address"
             name="customer-address"
             autocomplete="street-address"
-            required
           />
         </div>
         <div class="order-modal__field">
-          <label class="order-modal__label" for="order-customer-postal">Code postal</label>
+          <label class="order-modal__label" for="order-customer-postal">Code postal <span class="order-modal__optional">(facultatif)</span></label>
           <input
             class="order-modal__input"
             type="text"
@@ -58,23 +69,21 @@
             name="customer-postal"
             autocomplete="postal-code"
             inputmode="numeric"
-            required
           />
         </div>
         <div class="order-modal__field">
-          <label class="order-modal__label" for="order-customer-city">Ville</label>
+          <label class="order-modal__label" for="order-customer-city">Ville <span class="order-modal__optional">(facultatif)</span></label>
           <input
             class="order-modal__input"
             type="text"
             id="order-customer-city"
             name="customer-city"
             autocomplete="address-level2"
-            required
           />
         </div>
       </div>
       <p class="order-modal__hint" id="order-modal-hint" hidden>
-        Renseignez vos coordonnées de livraison pour envoyer ou copier la commande.
+        Renseignez votre nom et votre téléphone pour envoyer ou copier la commande.
       </p>
     </div>
     <div id="order-modal-list" class="order-modal__list"></div>

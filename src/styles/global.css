@@ -1303,6 +1303,13 @@ body.order-modal-open {
   color: var(--accent);
 }
 
+.order-modal__optional {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--muted-foreground);
+}
+
 .order-modal__input {
   width: 100%;
   padding: 0.5rem 0.625rem;
