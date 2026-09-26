@@ -6,6 +6,7 @@ import type {
   SpiritTypeGroup,
   Wine,
 } from './types';
+import { ICON_TRASH_OUTLINE } from './icons';
 import { getSpiritKey, getWineKey } from './selection';
 import {
   formatAbv,
@@ -62,7 +63,8 @@ function renderSelectionControl(
         data-selection-action="remove"
         aria-label="Retirer de ma sélection"
       >
-        Retirer
+        <span class="selection-btn__remove-label">Retirer</span>
+        <span class="selection-btn__remove-icon">${ICON_TRASH_OUTLINE}</span>
       </button>
     `;
   }

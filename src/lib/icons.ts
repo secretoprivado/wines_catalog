@@ -1,0 +1,1 @@
+export const ICON_TRASH_OUTLINE = `<svg class="icon-trash" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.75h11M6.25 4.75V3.25h3.5v1.5M4 4.75v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8"/></svg>`;

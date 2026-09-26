@@ -1,4 +1,5 @@
 import { formatPrice, formatVintage } from './format';
+import { ICON_TRASH_OUTLINE } from './icons';
 import { getSpiritKey, getWineKey } from './selection';
 import type { Spirit, Wine } from './types';
 
@@ -354,8 +355,6 @@ function orderInputId(key: string): string {
   return `order-qty-${key.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 }
 
-const ORDER_TRASH_ICON = `<svg class="order-item__remove-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2.5 4.75h11M6.25 4.75V3.25h3.5v1.5M4 4.75v8a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-8"/></svg>`;
-
 export function renderOrderModalItem(item: OrderItem): string {
   const max = getOrderQuantityCap(item.price, item.stock);
   const unavailable = max <= 0;
@@ -409,7 +408,7 @@ export function renderOrderModalItem(item: OrderItem): string {
           data-order-key="${escapeHtml(item.key)}"
           aria-label="Retirer de la sélection"
         >
-          ${ORDER_TRASH_ICON}
+          ${ICON_TRASH_OUTLINE}
         </button>
       </div>
     </div>
