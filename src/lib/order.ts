@@ -53,6 +53,15 @@ export function getMaxQuantity(stock: number | null): number {
   return Math.max(0, stock);
 }
 
+export function getOrderQuantityCap(price: number | null, stock: number | null): number {
+  if (price === null) return 0;
+  return getMaxQuantity(stock);
+}
+
+export function isOrderItemOrderable(item: Pick<OrderItem, 'price' | 'stock'>): boolean {
+  return getOrderQuantityCap(item.price, item.stock) > 0;
+}
+
 export function resolveSelectedOrderItems(
   wines: Wine[],
   spirits: Spirit[],
@@ -65,7 +74,7 @@ export function resolveSelectedOrderItems(
     const key = getWineKey(wine);
     if (!selectedKeys.has(key)) continue;
 
-    const max = getMaxQuantity(wine.stock);
+    const max = getOrderQuantityCap(wine.price, wine.stock);
     const defaultQty = max > 0 ? 1 : 0;
     const quantity = clampQuantity(quantities.get(key) ?? defaultQty, max);
 
@@ -83,7 +92,7 @@ export function resolveSelectedOrderItems(
     const key = getSpiritKey(spirit);
     if (!selectedKeys.has(key)) continue;
 
-    const max = getMaxQuantity(spirit.stock);
+    const max = getOrderQuantityCap(spirit.price, spirit.stock);
     const defaultQty = max > 0 ? 1 : 0;
     const quantity = clampQuantity(quantities.get(key) ?? defaultQty, max);
 
@@ -105,8 +114,12 @@ export function clampQuantity(quantity: number, max: number): number {
   return Math.min(Math.max(0, Math.floor(quantity)), max);
 }
 
+function isActiveOrderLine(item: OrderItem): boolean {
+  return item.quantity > 0 && item.price !== null;
+}
+
 export function computeOrderTotal(items: OrderItem[]): number | null {
-  const active = items.filter((item) => item.quantity > 0);
+  const active = items.filter(isActiveOrderLine);
   if (active.length === 0) return 0;
 
   let total = 0;
@@ -259,7 +272,7 @@ export function buildOrderBodyText(
   details: OrderCustomerDetails,
   orderedAt: Date = new Date(),
 ): string {
-  const active = items.filter((item) => item.quantity > 0);
+  const active = items.filter(isActiveOrderLine);
   const summary = summarizeOrder(active);
   const wines = active.filter((item) => item.kind === 'wine');
   const spirits = active.filter((item) => item.kind === 'spirit');
@@ -342,28 +355,30 @@ function orderInputId(key: string): string {
 }
 
 export function renderOrderModalItem(item: OrderItem): string {
-  const max = getMaxQuantity(item.stock);
-  const outOfStock = max <= 0;
-  const unitPrice = item.price !== null ? formatPrice(item.price) : '—';
+  const max = getOrderQuantityCap(item.price, item.stock);
+  const unavailable = max <= 0;
+  const unitPriceHtml =
+    item.price !== null
+      ? `<span class="order-item__price">${escapeHtml(formatPrice(item.price))}</span>`
+      : '';
   const lineTotal =
     item.price !== null && item.quantity > 0
       ? formatPrice(item.price * item.quantity)
-      : '—';
-  const stockHint =
-    item.stock === null
+      : '';
+  const stockHint = unavailable
+    ? 'Rupture de stock'
+    : item.stock === null
       ? 'Stock non indiqué'
-      : outOfStock
-        ? 'Rupture de stock'
-        : `${item.stock} en stock`;
+      : `${item.stock} en stock`;
 
   const inputId = orderInputId(item.key);
 
   return `
-    <div class="order-item${outOfStock ? ' order-item--unavailable' : ''}" data-order-key="${escapeHtml(item.key)}"${item.price !== null ? ` data-order-price="${item.price}"` : ''}>
+    <div class="order-item${unavailable ? ' order-item--unavailable' : ''}" data-order-key="${escapeHtml(item.key)}"${item.price !== null ? ` data-order-price="${item.price}"` : ''}>
       <div class="order-item__info">
         <p class="order-item__label">${escapeHtml(item.label)}</p>
         <p class="order-item__meta">
-          <span class="order-item__price">${escapeHtml(unitPrice)}</span>
+          ${unitPriceHtml}
           <span class="order-item__stock">${escapeHtml(stockHint)}</span>
         </p>
       </div>
@@ -380,10 +395,10 @@ export function renderOrderModalItem(item: OrderItem): string {
           step="1"
           inputmode="numeric"
           data-order-qty-key="${escapeHtml(item.key)}"
-          ${outOfStock ? 'disabled' : ''}
+          ${unavailable ? 'disabled' : ''}
         />
         <span class="order-item__line-amount" aria-live="polite">
-          <span class="order-item__line-total">${escapeHtml(lineTotal)}</span>${item.price !== null ? `<span class="order-item__line-ttc"${item.quantity > 0 ? '' : ' hidden'}>TTC</span>` : ''}
+          ${lineTotal ? `<span class="order-item__line-total">${escapeHtml(lineTotal)}</span><span class="order-item__line-ttc">TTC</span>` : ''}
         </span>
       </div>
     </div>

@@ -86,3 +86,21 @@ export function removeSelection(key: string, keys: Set<string>): void {
   next.delete(key);
   saveSelection(next);
 }
+
+export function pruneSelectionKeys(
+  keys: Set<string>,
+  wines: Wine[],
+  spirits: Spirit[],
+): Set<string> {
+  const validKeys = new Set<string>([
+    ...wines.map((wine) => getWineKey(wine)),
+    ...spirits.map((spirit) => getSpiritKey(spirit)),
+  ]);
+
+  const next = new Set([...keys].filter((key) => validKeys.has(key)));
+  if (next.size !== keys.size) {
+    saveSelection(next);
+  }
+
+  return next;
+}

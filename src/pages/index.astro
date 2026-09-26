@@ -68,6 +68,7 @@ import OrderModal from '../components/OrderModal.astro';
     getSpiritKey,
     getWineKey,
     loadSelection,
+    pruneSelectionKeys,
     removeSelection,
     toggleSelection,
   } from '../lib/selection';
@@ -79,6 +80,7 @@ import OrderModal from '../components/OrderModal.astro';
     formatOrderTotal,
     getMaxQuantity,
     isOrderCustomerDetailsComplete,
+    isOrderItemOrderable,
     loadOrderCustomerDetails,
     renderOrderModalList,
     resolveSelectedOrderItems,
@@ -514,7 +516,7 @@ import OrderModal from '../components/OrderModal.astro';
   }
 
   function updateOrderModalSummary(items: OrderItem[]) {
-    const active = items.filter((item) => item.quantity > 0);
+    const active = items.filter((item) => item.quantity > 0 && isOrderItemOrderable(item));
     const details = readOrderCustomerDetails();
     const canSend = active.length > 0 && isOrderCustomerDetailsComplete(details);
 
@@ -671,16 +673,13 @@ import OrderModal from '../components/OrderModal.astro';
       const key = target.dataset.orderQtyKey;
       if (!key) return;
 
-      const max = Number(target.max) || getMaxQuantity(null);
+      const maxParsed = Number(target.max);
+      const max = Number.isFinite(maxParsed) ? maxParsed : getMaxQuantity(null);
       const quantity = clampQuantity(Number(target.value), max);
       target.value = String(quantity);
       orderQuantities.set(key, quantity);
       updateOrderLineTotal(target);
-
-      const items = getOrderItems().map((item) =>
-        item.key === key ? { ...item, quantity } : item,
-      );
-      updateOrderModalSummary(items);
+      updateOrderModalSummary(getOrderItems());
     });
 
     orderModalMailtoEl?.addEventListener('click', (event) => {
@@ -692,7 +691,7 @@ import OrderModal from '../components/OrderModal.astro';
     orderModalCopyBtn?.addEventListener('click', async () => {
       const items = getOrderItems();
       const details = readOrderCustomerDetails();
-      const active = items.filter((item) => item.quantity > 0);
+      const active = items.filter((item) => item.quantity > 0 && isOrderItemOrderable(item));
       if (active.length === 0 || !isOrderCustomerDetailsComplete(details)) return;
 
       try {
@@ -814,7 +813,11 @@ import OrderModal from '../components/OrderModal.astro';
       bindFilterEvents();
       bindSelectionEvents();
       bindOrderEvents();
-      selectedKeys = loadSelection();
+      selectedKeys = pruneSelectionKeys(
+        loadSelection(),
+        wines.wines,
+        spirits?.spirits ?? [],
+      );
       updateSelectionBadge();
       applyFiltersFromUrl();
       updateCatalog();
