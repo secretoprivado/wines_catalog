@@ -320,11 +320,10 @@ export function buildOrderMailtoUrl(
   details: OrderCustomerDetails,
   orderedAt: Date = new Date(),
 ): string {
-  const params = new URLSearchParams();
-  params.set('subject', buildOrderSubject(details));
-  params.set('body', buildOrderBodyText(items, details, orderedAt));
+  const subject = encodeURIComponent(buildOrderSubject(details));
+  const body = encodeURIComponent(buildOrderBodyText(items, details, orderedAt));
 
-  return `mailto:${ORDER_EMAIL}?${params.toString()}`;
+  return `mailto:${ORDER_EMAIL}?subject=${subject}&body=${body}`;
 }
 
 function escapeHtml(value: string): string {
